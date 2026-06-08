@@ -1,0 +1,21 @@
+{
+  "name": "nothern131-agent-skills",
+  "owner": {
+    "name": "Nothern131"
+  },
+  "metadata": {
+    "description": "Nothern131's Agent Skills collection",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "codeguard",
+      "description": "Automated code quality scanner — 50 rules across 5 dimensions with 0-100 scoring and prioritized fix suggestions",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/codeguard"
+      ]
+    }
+  ]
+}
