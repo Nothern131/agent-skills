@@ -201,7 +201,7 @@ app.post('/api/orders', (req, res) => {
 
 **Fix:**
 ```javascript
-app.post('/api/orders', (req, res) => {
+app.post('/api/orders', async (req, res) => {
   const idempotencyKey = req.headers['idempotency-key'];
   if (idempotencyKey) {
     const existing = await getOrderByIdempotencyKey(idempotencyKey);

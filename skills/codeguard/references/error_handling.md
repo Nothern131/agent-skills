@@ -225,13 +225,13 @@ function createUser(name, email, age) {
 
 ### ERR009 — Bare except catching all exceptions
 
-**What to look for:** Python `except:` or `except Exception:` that catches everything including SystemExit and KeyboardInterrupt.
+**What to look for:** Python bare `except:` that catches everything including SystemExit and KeyboardInterrupt. Note: `except Exception:` is less severe but still overly broad.
 
 **Patterns:**
 ```python
 try:
     do_something()
-except:  # Catches everything including SystemExit
+except:  # Bare except catches SystemExit, KeyboardInterrupt, etc.
     pass
 ```
 
