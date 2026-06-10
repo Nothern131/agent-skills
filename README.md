@@ -1,6 +1,6 @@
 # Agent Skills
 
-A collection of Agent Skills for Claude Code, Trae, and other AI coding assistants that support the [Agent Skills specification](https://agentskills.io/specification).
+A collection of Agent Skills for AI coding assistants that support the [Agent Skills specification](https://agentskills.io/specification).
 
 ## Skills
 
@@ -9,21 +9,90 @@ A collection of Agent Skills for Claude Code, Trae, and other AI coding assistan
 | [codeguard](./skills/codeguard/) | Automated code quality scanner — 80 rules across 8 dimensions (error handling, security, database, diagnostics, resilience, memory safety, concurrency, resource management) with 0–100 scoring. Covers Python, JS/TS, C/C++, GDScript, Go |
 | [clarifying-questions](./skills/clarifying-questions/) | Helps AI precisely understand user requirements by asking targeted clarifying questions before starting work |
 
-## Quick Start
+## Installation
 
-### Install in Claude Code
+### Claude Code
 
 ```bash
 /plugin marketplace add Nothern131/agent-skills
 ```
 
-### Install in Trae
+Or manually add to your `.claude/skills/` directory.
 
-Copy the skill folder into your Trae skills directory.
+### Trae
 
-### Manual Installation
+Copy the skill folder into your Trae skills directory:
+- **macOS**: `~/.trae/skills/`
+- **Windows**: `%USERPROFILE%\.trae\skills\`
 
-Copy the desired skill folder (e.g., `skills/codeguard/`) into your local skills directory.
+### Cursor
+
+1. Open Cursor Settings → Features → Rules
+2. Add the skill content as a Project Rule or User Rule
+3. Or place `SKILL.md` content in `.cursor/rules/` directory
+
+### Windsurf (Codeium)
+
+1. Open Windsurf Settings → AI → Rules
+2. Add the skill as a custom rule
+3. Or place in `.windsurfrules` file
+
+### Cline (VS Code Extension)
+
+1. Open Cline settings → Custom Instructions
+2. Paste the skill instructions from `SKILL.md`
+3. Or add to `.clinerules` file in project root
+
+### Aider
+
+```bash
+# Add as custom instruction file
+aider --message-file skills/codeguard/SKILL.md
+# Or add to .aider.conf.yml
+echo "read: skills/codeguard/SKILL.md" >> .aider.conf.yml
+```
+
+### Continue.dev
+
+1. Open Continue config (`~/.continue/config.json`)
+2. Add the skill as a custom context provider or in `customCommands`
+3. Reference the `SKILL.md` file path
+
+### GitHub Copilot
+
+1. Create `.github/copilot-instructions.md` in your repo
+2. Paste the skill content from `SKILL.md`
+3. Copilot will automatically follow these instructions
+
+### Augment
+
+1. Open Augment settings → Custom Instructions
+2. Add the skill instructions from `SKILL.md`
+
+### Zed
+
+1. Open Zed settings → AI → Context Servers
+2. Add the skill files as context
+
+### Generic / Any AI Assistant
+
+Most AI coding tools support custom instructions or rules files. The universal approach:
+
+1. Copy `SKILL.md` content into your tool's custom instructions / system prompt / rules file
+2. Copy the `references/` folder alongside it for on-demand rule loading
+3. The YAML frontmatter (`name`, `description`) helps the AI decide when to activate the skill
+
+Common config file names:
+| Tool | Config File |
+|------|------------|
+| Claude Code | `.claude/skills/` |
+| Trae | `.trae/skills/` |
+| Cursor | `.cursor/rules/` |
+| Windsurf | `.windsurfrules` |
+| Cline | `.clinerules` |
+| GitHub Copilot | `.github/copilot-instructions.md` |
+| Aider | `.aider.conf.yml` |
+| Continue | `~/.continue/config.json` |
 
 ## Skill Structure
 

@@ -15,16 +15,22 @@ CodeGuard is an **Agent Skill** that scans source code for 80 common defects acr
 
 ## Quick Start
 
-### Install in Claude Code
-
+### Claude Code
 ```bash
-# Add this repo as a skill source
-# Then install the codeguard skill
+/plugin marketplace add Nothern131/agent-skills
 ```
 
-### Manual Installation
+### Trae
+Copy the `codeguard/` folder into your Trae skills directory.
 
-Copy the `codeguard/` folder into your skills directory. The skill will activate when you mention code review, code quality, security scan, or similar phrases.
+### Cursor
+Add `SKILL.md` content to `.cursor/rules/` or as a Project Rule.
+
+### Windsurf / Cline / Aider / Continue / Copilot
+See the [main README](../../README.md#installation) for tool-specific installation guides.
+
+### Manual Installation
+Copy the `codeguard/` folder into your tool's skills/rules directory.
 
 ## Scan Dimensions
 
