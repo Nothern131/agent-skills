@@ -1,18 +1,20 @@
 ---
 name: codeguard
-description: Automated code quality scanner that detects 50 common defects across 5 dimensions (error handling, security, database protection, diagnostics, resilience). Use this skill whenever the user asks for code review, code quality check, code audit, security scan, or wants to ensure their code is production-ready. Also use when the user mentions error handling, security vulnerabilities, database safety, observability, or resilience patterns — even if they don't explicitly ask for a "code review."
+description: "Automated code quality scanner that detects 80 common defects across 8 dimensions (error handling, security, database protection, diagnostics, resilience, memory safety, concurrency, resource management). Covers Python, JavaScript/TypeScript, C/C++, GDScript, and Go. Use this skill whenever the user asks for code review, code quality check, code audit, security scan, or wants to ensure their code is production-ready. Also use when the user mentions error handling, security vulnerabilities, database safety, observability, resilience, memory safety, concurrency, or resource leaks — even if they don't explicitly ask for a 'code review.'"
 license: Apache-2.0
 ---
 
 # CodeGuard — Automated Code Quality Scanner
 
-CodeGuard scans source code for 50 common defects across 5 dimensions, outputs a 0–100 score, and provides prioritized fix suggestions. It ensures AI-generated code meets production-grade quality.
+CodeGuard scans source code for 80 common defects across 8 dimensions, outputs a 0–100 score, and provides prioritized fix suggestions. It ensures AI-generated code meets production-grade quality.
+
+**Supported Languages:** Python, JavaScript/TypeScript, C/C++, GDScript, Go
 
 ## When to Trigger
 
 - User asks for code review, code quality check, code audit, or security scan
 - User mentions "code smell", "bad code", "code robustness", "production-ready"
-- User wants to check error handling, security, database safety, observability, or resilience
+- User wants to check error handling, security, database safety, observability, resilience, memory safety, concurrency, or resource management
 - After generating significant code, proactively offer a quality scan
 - User points to a specific file or module and asks for a health check
 
@@ -25,17 +27,29 @@ CodeGuard scans source code for 50 common defects across 5 dimensions, outputs a
 | 3 | Database Protection | `database` | 10 | [references/database.md](references/database.md) |
 | 4 | Diagnostics | `diagnosis` | 10 | [references/diagnosis.md](references/diagnosis.md) |
 | 5 | Resilience | `resilience` | 10 | [references/resilience.md](references/resilience.md) |
+| 6 | Memory Safety | `memory_safety` | 10 | [references/memory_safety.md](references/memory_safety.md) |
+| 7 | Concurrency | `concurrency` | 10 | [references/concurrency.md](references/concurrency.md) |
+| 8 | Resource Management | `resource_management` | 10 | [references/resource_management.md](references/resource_management.md) |
 
-**Load the relevant reference file** when scanning a specific dimension. For full scans, load all five. Each reference contains the rule table, detection patterns, and fix examples.
+**Load the relevant reference file** when scanning a specific dimension. For full scans, load all eight. Each reference contains the rule table, detection patterns, and fix examples for all supported languages.
+
+### Dimension Selection Guide
+
+- **All projects**: Error Handling, Security, Diagnostics, Resource Management
+- **Web/API projects**: + Database Protection, Resilience
+- **C/C++ projects**: + Memory Safety, Concurrency
+- **Game projects (GDScript)**: + Memory Safety (node lifecycle), Concurrency (deferred calls)
+- **Concurrent systems**: + Concurrency, Resilience
 
 ## Workflow
 
 ### Step 1: Determine Scan Scope
 
 Ask the user (or infer from context):
-- **Full scan** — all 5 dimensions
+- **Full scan** — all 8 dimensions
 - **Dimension scan** — only specified dimensions (e.g., "check security")
 - **File scan** — scan one or more specific files
+- **Language scan** — scan only dimensions relevant to the project's language
 
 ### Step 2: Read the Code
 
@@ -60,6 +74,7 @@ Output a structured report:
 ## Summary
 - **Overall Score**: X/100
 - **Files Scanned**: N
+- **Languages Detected**: Python, C++
 - **Total Issues**: M (Critical: a | High: b | Medium: c | Low: d)
 
 ## Dimension Scores
@@ -70,22 +85,25 @@ Output a structured report:
 | Database Protection | X/100 | N |
 | Diagnostics | X/100 | N |
 | Resilience | X/100 | N |
+| Memory Safety | X/100 | N |
+| Concurrency | X/100 | N |
+| Resource Management | X/100 | N |
 
 ## Issues (sorted by severity)
 
 ### CRITICAL
-- **[PERM001]** path/to/file.py:42 — Hardcoded secret detected
-  Fix: Move to environment variable
+- **[MEM001]** src/buffer.c:42 — Buffer overflow: strcpy without bounds check
+  Fix: Use strncpy with size validation
 
 ### HIGH
-- **[ERR002]** path/to/file.js:15 — Empty catch block swallows error
+- **[ERR002]** src/handler.js:15 — Empty catch block swallows error
   Fix: Log or rethrow the error
 
 ...
 
 ## Top Priority Fixes
-1. [CRITICAL] PERM001 — ...
-2. [CRITICAL] PERM002 — ...
+1. [CRITICAL] MEM001 — ...
+2. [CRITICAL] PERM001 — ...
 3. [HIGH] ERR002 — ...
 ```
 
@@ -93,7 +111,7 @@ Output a structured report:
 
 For each issue found, provide:
 - The rule ID and what it means
-- A concrete code fix (before/after)
+- A concrete code fix (before/after) in the project's language
 - Prioritize critical and high severity issues
 
 ## Scoring Algorithm
@@ -121,14 +139,24 @@ When no external tools are available, scan code manually by reading source files
 **Example 1: Full scan**
 > "Review the code quality of src/auth/login.py"
 
-Load all 5 reference files, read the file, execute scan, output report.
+Load all 8 reference files, read the file, execute scan, output report.
 
 **Example 2: Security-focused scan**
 > "Check my API routes for security issues"
 
 Load only `references/permissions.md`, read the route files, scan for PERM rules.
 
-**Example 3: Quick health check**
+**Example 3: C/C++ memory safety scan**
+> "Check this C code for memory bugs"
+
+Load `references/memory_safety.md` and `references/resource_management.md`, scan for MEM and RES_M rules.
+
+**Example 4: GDScript game project scan**
+> "Review my Godot plugin code"
+
+Load relevant references, focus on ERR, RES_M (node lifecycle), and CON (deferred calls) rules.
+
+**Example 5: Quick health check**
 > "Is this code production-ready?"
 
 Load all references, scan, output a concise summary with top 3 issues to fix.
@@ -138,6 +166,8 @@ Load all references, scan, output a concise summary with top 3 issues to fix.
 - Always explain *why* a rule matters, not just *what* it checks
 - Prioritize actionable fixes over theoretical concerns
 - For code that doesn't use databases, skip the database dimension
+- For non-C/C++ code, skip the memory safety dimension (unless GDScript node lifecycle applies)
 - Adapt severity based on context — a hardcoded secret in a public repo is critical; in a local script it's low
 - Don't flag issues in code the user didn't ask to scan
 - When multiple violations of the same rule exist, group them in the report
+- Match fix examples to the project's primary language

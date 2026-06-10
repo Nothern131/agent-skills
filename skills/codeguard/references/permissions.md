@@ -1,6 +1,6 @@
 # Security / Permissions Rules
 
-10 rules that detect security vulnerabilities and permission issues.
+10 rules that detect security vulnerabilities and permission issues across all languages (Python, JavaScript/TypeScript, C/C++, GDScript, Go).
 
 ## Rule Table
 
@@ -43,6 +43,18 @@ const dbPassword = process.env.DB_PASSWORD;
 import os
 API_KEY = os.environ["API_KEY"]
 DB_PASSWORD = os.environ["DB_PASSWORD"]
+```
+```c
+// C: Read from environment or config file
+const char *api_key = getenv("API_KEY");
+if (!api_key) {
+    fprintf(stderr, "API_KEY not set\n");
+    return EXIT_FAILURE;
+}
+```
+```cpp
+// C++: Use config abstraction
+auto apiKey = Config::get("API_KEY");  // Reads from env/config
 ```
 
 ### PERM002 — SQL injection risk
@@ -89,6 +101,15 @@ execFile('rm', ['-rf', sanitizePath(userInput)]);
 ```
 ```python
 subprocess.run(["rm", "-rf", sanitize_path(user_input)], shell=False)
+```
+```c
+// C: Use execvp with argument array, never system()
+char *args[] = {"rm", "-rf", sanitized_path, NULL};
+pid_t pid = fork();
+if (pid == 0) {
+    execvp("rm", args);
+    _exit(EXIT_FAILURE);
+}
 ```
 
 ### PERM004 — Path traversal risk

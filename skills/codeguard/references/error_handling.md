@@ -1,6 +1,6 @@
 # Error Handling Rules
 
-10 rules that detect missing or improper error handling in code.
+10 rules that detect missing or improper error handling across all languages (Python, JavaScript/TypeScript, C/C++, GDScript, Go).
 
 ## Rule Table
 
@@ -49,6 +49,22 @@ except requests.RequestException as e:
     logger.error(f"API call failed: {e}")
     raise AppError("API_CALL_FAILED", e)
 ```
+```c
+// C: Use error code returns + errno
+FILE *f = fopen(path, "r");
+if (!f) {
+    logger_error("Failed to open file: %s (errno=%d)", path, errno);
+    return ERR_FILE_OPEN_FAILED;
+}
+```
+```go
+// Go: Check error return values
+resp, err := http.Get("https://api.example.com/data")
+if err != nil {
+    logger.Errorf("API call failed: %v", err)
+    return AppError{Code: "API_CALL_FAILED", Err: err}
+}
+```
 
 ### ERR002 — Empty catch/except block
 
@@ -82,6 +98,21 @@ try {
 except Exception as e:
     logger.warning(f"Non-critical operation failed: {e}")
     # Explicitly document why we're swallowing this error
+```
+```c
+// C: No exceptions — use error codes with explicit handling
+int result = do_something();
+if (result != 0) {
+    logger_warn("Non-critical operation failed: error %d", result);
+    // Explicitly document why we continue despite error
+}
+```
+```gdscript
+# GDScript: Handle push_error/push_warning
+var result = do_something()
+if result != OK:
+    push_warning("Non-critical operation failed: " + str(result))
+    # Document why we continue
 ```
 
 ### ERR003 — Promise/await missing error handling
@@ -180,6 +211,33 @@ try {
 ```python
 with open('data.txt', 'r') as f:
     content = f.read()
+```
+```c
+// C: Use goto-cleanup pattern
+FILE *f = NULL;
+char *buf = NULL;
+int result = -1;
+
+f = fopen(path, "r");
+if (!f) goto cleanup;
+buf = malloc(size);
+if (!buf) goto cleanup;
+// ... use resources ...
+result = 0;
+
+cleanup:
+    free(buf);
+    if (f) fclose(f);
+    return result;
+```
+```gdscript
+# GDScript: Use is_instance_valid checks and queue_free
+var node = preload("scene.tscn").instantiate()
+add_child(node)
+# Cleanup in _exit_tree
+func _exit_tree():
+    if is_instance_valid(node):
+        node.queue_free()
 ```
 
 ### ERR007 — catch block only console.log

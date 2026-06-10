@@ -1,6 +1,6 @@
 # Diagnostics Rules
 
-10 rules that detect missing observability and diagnostic capabilities.
+10 rules that detect missing observability and diagnostic capabilities across all languages (Python, JavaScript/TypeScript, C/C++, GDScript, Go).
 
 ## Rule Table
 
@@ -71,6 +71,19 @@ throw new AppError('PAYMENT_FAILED', { amount, reason: err.message });
 ```python
 raise AppError("USER_NOT_FOUND", user_id=user_id)
 raise AppError("PAYMENT_FAILED", amount=amount, reason=str(err))
+```
+```c
+// C: Use structured error codes, not bare strings
+return (AppError){.code = ERR_USER_NOT_FOUND, .user_id = user_id};
+```
+```cpp
+// C++: Use typed exceptions with error codes
+throw AppError(ErrorCode::USER_NOT_FOUND, "user_id", userId);
+```
+```gdscript
+# GDScript: Use named error constants
+push_error("USER_NOT_FOUND: user_id=%d" % user_id)
+return ERR_USER_NOT_FOUND
 ```
 
 ### DIAG003 — Log missing context information

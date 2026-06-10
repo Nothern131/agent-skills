@@ -6,7 +6,7 @@ A collection of Agent Skills for Claude Code, Trae, and other AI coding assistan
 
 | Skill | Description |
 |-------|-------------|
-| [codeguard](./skills/codeguard/) | Automated code quality scanner — 50 rules across 5 dimensions (error handling, security, database protection, diagnostics, resilience) with 0–100 scoring |
+| [codeguard](./skills/codeguard/) | Automated code quality scanner — 80 rules across 8 dimensions (error handling, security, database, diagnostics, resilience, memory safety, concurrency, resource management) with 0–100 scoring. Covers Python, JS/TS, C/C++, GDScript, Go |
 | [clarifying-questions](./skills/clarifying-questions/) | Helps AI precisely understand user requirements by asking targeted clarifying questions before starting work |
 
 ## Quick Start

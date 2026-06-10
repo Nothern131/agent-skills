@@ -1,6 +1,6 @@
 # Resilience Rules
 
-10 rules that detect missing fault tolerance and resilience patterns.
+10 rules that detect missing fault tolerance and resilience patterns across all languages (Python, JavaScript/TypeScript, C/C++, GDScript, Go).
 
 ## Rule Table
 

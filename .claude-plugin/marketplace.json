@@ -5,12 +5,12 @@
   },
   "metadata": {
     "description": "Nothern131's Agent Skills collection",
-    "version": "1.1.0"
+    "version": "2.0.0"
   },
   "plugins": [
     {
       "name": "codeguard",
-      "description": "Automated code quality scanner — 50 rules across 5 dimensions with 0-100 scoring and prioritized fix suggestions",
+      "description": "Automated code quality scanner — 80 rules across 8 dimensions with 0-100 scoring and prioritized fix suggestions. Covers Python, JS/TS, C/C++, GDScript, Go",
       "source": "./",
       "strict": false,
       "skills": [

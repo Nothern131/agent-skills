@@ -1,6 +1,6 @@
 # Database Protection Rules
 
-10 rules that detect database safety issues and data integrity risks.
+10 rules that detect database safety issues and data integrity risks across all languages (Python, JavaScript/TypeScript, C/C++, Go).
 
 ## Rule Table
 
