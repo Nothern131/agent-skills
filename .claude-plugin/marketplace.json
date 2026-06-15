@@ -25,6 +25,15 @@
       "skills": [
         "./skills/clarifying-questions"
       ]
+    },
+    {
+      "name": "model-upgrade",
+      "description": "Engineering framework that enables any AI coding assistant to achieve GPT/Claude parity through structured rules, test-feedback loops, task decomposition, and project context awareness",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/model-upgrade"
+      ]
     }
   ]
 }

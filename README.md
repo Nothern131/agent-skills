@@ -8,6 +8,7 @@ A collection of Agent Skills for AI coding assistants that support the [Agent Sk
 |-------|-------------|
 | [codeguard](./skills/codeguard/) | Automated code quality scanner — 80 rules across 8 dimensions (error handling, security, database, diagnostics, resilience, memory safety, concurrency, resource management) with 0–100 scoring. Covers Python, JS/TS, C/C++, GDScript, Go |
 | [clarifying-questions](./skills/clarifying-questions/) | Helps AI precisely understand user requirements by asking targeted clarifying questions before starting work |
+| [model-upgrade](./skills/model-upgrade/) | Engineering framework that enables any AI coding assistant (domestic or international) to achieve GPT/Claude parity through structured rules, test-feedback loops, task decomposition, and project context awareness |
 
 ## Installation
 
