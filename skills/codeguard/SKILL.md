@@ -171,3 +171,35 @@ Load all references, scan, output a concise summary with top 3 issues to fix.
 - Don't flag issues in code the user didn't ask to scan
 - When multiple violations of the same rule exist, group them in the report
 - Match fix examples to the project's primary language
+
+## AI Security Blind Spot Detection
+
+> AI-generated code has a unique vulnerability: the code looks just as confident whether it's secure or not.
+> CodeGuard adds security-aware scanning on top of the 8 dimensions.
+
+### Security Confidence Annotation
+
+When scanning AI-generated code, CodeGuard should also check for:
+
+1. **Missing security annotations**: If the code handles user input, auth, payments, or sensitive data but has no `// SECURITY:` comment, flag it as a `PERM010` variant (missing security awareness).
+
+2. **Overconfident security claims**: If the code claims something is "secure" or "safe" without evidence (no standard library usage, no test, no audit), flag it as `DIAG010` variant (security claim without audit trail).
+
+3. **Security review gaps**: For P0 code (auth, payments, user input, external APIs), if no `// SECURITY REVIEW:` annotation exists, flag it as `DIAG010` variant.
+
+### Scan Priority Tiers
+
+When scanning AI-generated code, apply tiered depth:
+
+| Tier | Code Type | Scan Depth |
+|------|-----------|------------|
+| P0 | Auth/authorization, payments, user input handling, external API calls | Full 8-dimension scan + security blind spot check |
+| P1 | Database operations, file operations, config management | 8-dimension scan |
+| P2 | Pure UI logic, internal utilities, test code | Error handling + security + resource management only |
+
+### Vulnerability Density Alert
+
+If a single scan finds 3+ Critical/High issues:
+- Output a **VULNERABILITY DENSITY WARNING** at the top of the report
+- Recommend stopping new code generation until issues are resolved
+- Suggest the generation pattern may need adjustment
