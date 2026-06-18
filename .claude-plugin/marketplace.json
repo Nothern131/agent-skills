@@ -5,7 +5,7 @@
   },
   "metadata": {
     "description": "Nothern131's Agent Skills collection",
-    "version": "2.0.0"
+    "version": "3.0.0"
   },
   "plugins": [
     {
@@ -28,7 +28,7 @@
     },
     {
       "name": "model-upgrade",
-      "description": "Engineering framework that enables any AI coding assistant to achieve GPT/Claude parity through structured rules, test-feedback loops, task decomposition, and project context awareness",
+      "description": "Engineering framework that enables any AI coding assistant to achieve GPT/Claude parity through five layers of defense: structured rules, context injection, task decomposition, test-feedback loops, and last-mile delivery guarantee",
       "source": "./",
       "strict": false,
       "skills": [

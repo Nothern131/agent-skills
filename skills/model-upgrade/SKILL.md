@@ -1,6 +1,6 @@
 ---
 name: model-upgrade
-description: "A comprehensive engineering framework that enables any AI coding assistant (domestic or international) to achieve GPT/Claude parity through structured rules, iterative feedback loops, task decomposition, and project context awareness. Use this skill as the FIRST thing activated in any coding session. It enforces engineering discipline, provides prompt templates, and manages the full development lifecycle — making even weaker models produce production-grade output through process, not just raw model capability."
+description: "A comprehensive engineering framework that enables any AI coding assistant (domestic or international) to achieve GPT/Claude parity through five layers of defense: structured rules, context injection, task decomposition, test-feedback loops, and last-mile delivery guarantee. Use this skill as the FIRST thing activated in any coding session. It enforces engineering discipline, provides prompt templates, and manages the full development lifecycle — making even weaker models produce production-grade output through process, not just raw model capability."
 license: Apache-2.0
 ---
 
@@ -26,12 +26,13 @@ This is your **default mode** — always activate at the start of any coding ses
 - Tasks that require testing, deployment, or architecture decisions
 - When the model shows signs of losing track or skipping steps
 
-## Four-Layer Defense System
+## Five-Layer Defense System
 
 ### Layer 1: Project Constitution (Rules)
 ### Layer 2: Context Injection (PROJECT_CONTEXT.md)
 ### Layer 3: Task Decomposition (Break big → small)
 ### Layer 4: Test-Feedback Loop (Verify and self-correct)
+### Layer 5: Last-Mile Defense (90%→100% delivery guarantee)
 
 ---
 
@@ -391,6 +392,139 @@ When working with Godot:
 - Use RAII (smart pointers) in C++ instead of raw new/delete
 - Handle goto-cleanup pattern for resource management in C
 - Memory safety rules from codeguard apply
+
+---
+
+## Layer 5: Last-Mile Defense — 最后一公里防御
+
+> Agent能干90%，最后10%永远搞不定。根因：隐性需求未显性化、缺乏闭环验证、纠错指数级增长。
+> This layer solves "the code is correct but not what the user wanted."
+
+### Rule 1: Hidden Requirement Mining (Ask More Than Once)
+
+Hidden requirements don't surface in the first question. They emerge during execution.
+
+**Trigger points:**
+- After completing each sub-step, check for newly exposed hidden requirements
+- When the user says "almost but not quite", ask "what's missing?"
+- When there are multiple implementation choices, list options for the user to choose
+
+**Hidden requirement checklist (self-ask after each step):**
+- [ ] Is what the user said the same as what I understood?
+- [ ] Are there assumptions I made that the user didn't state?
+- [ ] Does the user really want this implementation, or is it just what I think is reasonable?
+- [ ] Are there edge cases the user might care about that I didn't ask?
+- [ ] Is current progress aligned with user expectations?
+
+**Hidden requirement template:**
+```
+I completed [step], current state is [description].
+Before continuing, I want to confirm:
+1. [Most likely hidden requirement] — Do you expect [A] or [B]?
+2. [Second likely spot] — Does this behavior match your expectation?
+3. [Potential assumption] — I assumed [X], is this correct?
+```
+
+### Rule 2: User Intent Verification (Close the Loop Beyond Code)
+
+Code passing tests ≠ satisfying user intent. Verify "what I built is what you want" at every key node.
+
+**Dual-loop verification:**
+```
+Inner loop (code correctness):
+  Syntax check → Tests pass → Lint pass → Codeguard scan pass
+
+Outer loop (user intent match):
+  Complete sub-step → Show result/effect → User confirms "this is what I want" → Continue
+                                         ↓ User says "not right"
+                                       Ask what's different → Fix → Re-show
+```
+
+**Intent verification triggers:**
+- After completing the first runnable version of core functionality (not after everything is done)
+- After making key architecture/design decisions
+- When the user might have different expectations for the result
+- Before switching from one sub-step to the next
+
+**Prohibited behaviors:**
+- Never complete 3+ sub-steps without intent verification
+- Never assume "code runs = user is satisfied"
+- Never continue when the user says "almost" without asking what's missing
+
+### Rule 3: Error Cascade Prevention (Fixes Don't Create New Errors)
+
+The three-attempt limit stops bleeding, but doesn't prevent cascading: fix A → breaks B → fix B → breaks C.
+
+**Cascade prevention rules:**
+1. **Assess impact before fixing**: List code paths affected by the fix. If 3+ modules affected, confirm strategy with user first.
+2. **Immediate regression after fix**: Verify not just the fixed bug, but that previously passing features still work.
+3. **Fix complexity budget**: If a bug fix fails 2+ attempts, stop and report to user: current problem, what was tried, why it can't be fixed, suggested alternatives (workaround, degradation, redesign).
+4. **No chain fixes**: Never fix 3+ interrelated bugs in one response. Fix one at a time, verify after each.
+
+**Cascade detection signals:**
+- Fix A breaks B → Fix B breaks C → This is a cascade, STOP immediately
+- Same file modified 3+ times consecutively → Direction may be wrong, reassess
+- Tests go from passing to failing → Roll back to last passing state, don't fix on top of failures
+
+### Rule 4: Delivery Pace Control (Progressive Delivery)
+
+Not all steps are equally important. Deliver core first, verify direction, then add details.
+
+**Delivery pace principles:**
+1. **MVP first**: Deliver minimum viable version, let user confirm direction, then add details
+   - V1: Core functionality works + basic error handling
+   - V2: Edge cases + performance optimization
+   - V3: Polish details + complete documentation
+
+2. **User confirmation checkpoints** (mandatory, not optional):
+   - After first version of core functionality → MUST pause, wait for user confirmation
+   - After architecture decisions → MUST pause, wait for user confirmation
+   - After 5+ sub-steps without confirmation → MUST pause, show progress
+
+3. **No "finish everything at once"**:
+   - Never generate complete implementations of 3+ files at once
+   - Never advance to the next phase without user confirmation
+   - Never assume the user will be satisfied with the final result without intermediate checks
+
+**Delivery pace template:**
+```
+Phase [N] complete. Current deliverables:
+- [Completed feature 1]
+- [Completed feature 2]
+- [Not yet completed feature 3] (planned for next phase)
+
+Please confirm:
+1. Is the current direction correct?
+2. Do priorities need adjustment?
+3. Can I proceed to the next phase?
+```
+
+### Rule 5: Expectation Alignment (Prevent "Done But Wrong")
+
+The most expensive error is not a code bug — it's completing an entire feature that the user didn't want.
+
+**Expectation alignment check (must complete before implementation):**
+1. **Restate requirements**: Rephrase the user's request in your own words, confirm understanding matches
+2. **Confirm boundaries**: Explicitly state what's "in scope" and "out of scope"
+3. **Confirm priorities**: If time is limited, what matters most
+4. **Confirm completion criteria**: How do we know when it's "done"
+
+**Expectation alignment template:**
+```
+I understand you need:
+- Goal: [rephrase in your own words]
+- Scope: includes [A, B, C], excludes [X, Y]
+- Priority: [A] > [B] > [C]
+- Completion criteria: [specific verifiable criteria]
+
+Is this understanding correct? Anything to add or correct?
+```
+
+**Expectation alignment triggers:**
+- When receiving a new task (first alignment)
+- When task understanding has drifted (re-align)
+- When user says "not right" / "that's not what I meant" (immediate alignment)
+- After completing core functionality, before entering detail phase (second alignment)
 
 ---
 
