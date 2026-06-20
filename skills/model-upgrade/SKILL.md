@@ -20,11 +20,29 @@ If the model is 80% of GPT's raw capability but you multiply it by 1.5x through 
 
 ## When to Trigger
 
-Always activate at the start of any coding session:
+**Always activate at the start of ANY coding session — no exceptions:**
 - Any significant coding task (feature, refactor, debug)
 - Multi-file changes or cross-module work
 - Tasks that require testing, deployment, or architecture decisions
 - When the model shows signs of losing track or skipping steps
+- Even small tasks must follow the Task Startup Protocol
+
+## Task Startup Protocol (Mandatory for Every Task)
+
+**At the start of every new task/instruction, must execute these checks (non-skippable):**
+
+1. **Rule Confirmation**: Confirm rules file is loaded, remember the 15 iron rules' key points
+2. **Task Classification**: Determine task type — coding/design/content/analysis/automation
+3. **Ambiguity Detection**: Is the task description vague? Need to trigger clarifying-questions?
+4. **Scale Assessment**: Does the task need decomposition? Need explore-first?
+5. **Startup Declaration**: Tell user in one sentence "Rules loaded, task type [X], plan [Y]"
+
+**Prohibited**:
+- Never skip the startup protocol and jump to coding
+- Never assume "this small task doesn't need rules"
+- Never omit rules unless user explicitly says so
+
+**Exception**: When user explicitly says "quick answer" / "skip rules" / "just do it", startup protocol can be skipped, but security-related iron rules (#7 No Silent Failures, #8 Security Annotation) still apply.
 
 ## Five-Layer Defense System
 
