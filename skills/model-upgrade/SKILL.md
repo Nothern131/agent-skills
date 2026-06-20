@@ -68,6 +68,34 @@ Always activate at the start of any coding session:
 
 ---
 
+## Context Protection Mechanism (Prevent Rule Amnesia)
+
+> When context gets long, models "forget" earlier rules. This mechanism detects and recovers.
+
+**Auto-trigger signals** (any one triggers recovery):
+- Conversation exceeds 15 turns
+- Single tool result exceeds 2000 lines
+- 5+ consecutive tool calls without intent verification
+- User says "you forgot again" / "what about the rules" / "didn't I tell you"
+- Self-uncertainty: "not sure if I followed a rule earlier"
+
+**3-Step Recovery (mandatory when triggered)**:
+1. **Re-read Rules**: Re-read the project rules file, confirm which iron rules apply to current task
+2. **State Check**: Review completed steps, check for violations (silent failures? skipped tests? missed intent verification?)
+3. **Correction Declaration**: Tell user "Context was long, I re-read the rules, found [violations/no violations], will [correct/continue] next"
+
+**Preventive Measures**:
+- After each sub-step, one-sentence internal summary: "what I just did, what's next"
+- At 10+ turns, proactively propose "Conversation is long, let me summarize progress: [summary], continue?"
+- After reading large files, immediately summarize key info, don't rely on looking back later
+
+**Prohibited**:
+- Never pretend to remember rules when context is long
+- Never skip rule re-reading and continue directly
+- Never default to "I followed the rules" — must actually check
+
+---
+
 ## Layer 2: Context Injection — Full Project Awareness
 
 ### Session Start
