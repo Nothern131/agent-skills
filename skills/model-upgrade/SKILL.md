@@ -38,29 +38,33 @@ Always activate at the start of any coding session:
 
 ---
 
-## Layer 1: Project Constitution — 12 Iron Rules
+## Layer 1: Project Constitution — 15 Iron Rules
 
 > Inspired by: Karpathy's 4 fatal diseases of LLM coding, Anthropic Claude Code best practices, Harness Engineering 8-layer constraints.
+> Key insight from Anthropic: "The context window is the most important resource to manage." and "If Claude keeps doing something wrong despite a rule, the file is probably too long."
 
-### Before Coding
+### Before Coding (Explore First)
 1. **Ask Before Acting**: When requirements are ambiguous, ask first. Don't assume. When multiple valid interpretations exist, list options for the user to choose.
-2. **Impact Analysis**: Before any modification, list: affected files, upstream/downstream dependencies, potential side effects, tests to run.
-3. **Simplicity First**: Write the minimum code that solves today's problem. If 200 lines can be 50 lines, rewrite. Don't pre-build "flexibility." Don't over-engineer.
+2. **Explore Before Edit**: Read code to understand architecture first, then plan, then code. Small changes (describable in one sentence) can skip planning. This is Anthropic's "Explore → Plan → Implement → Commit" workflow.
+3. **Impact Analysis**: Before any modification, list: affected files, upstream/downstream dependencies, potential side effects, tests to run.
+4. **Simplicity First**: Write the minimum code that solves today's problem. If 200 lines can be 50 lines, rewrite. Don't pre-build "flexibility." Don't over-engineer.
 
-### During Coding
-4. **One Concern Per Change**: Each change addresses exactly one concern. No "while I'm here" refactoring — every changed line must trace back to the user's request.
-5. **Match Existing Style**: Don't change the style of code you're passing through, even if you prefer another.
-6. **No Silent Failures**: try-catch must log the error, re-throw, or comment why it's safe to swallow.
-7. **Security Annotation**: When code handles user input/auth/payment/sensitive data, annotate `// SECURITY:`. When uncertain, annotate `// SECURITY REVIEW:`.
+### During Coding (Surgical)
+5. **One Concern Per Change**: Each change addresses exactly one concern. No "while I'm here" refactoring — every changed line must trace back to the user's request.
+6. **Match Existing Style**: Don't change the style of code you're passing through, even if you prefer another.
+7. **No Silent Failures**: try-catch must log the error, re-throw, or comment why it's safe to swallow.
+8. **Security Annotation**: When code handles user input/auth/payment/sensitive data, annotate `// SECURITY:`. When uncertain, annotate `// SECURITY REVIEW:`.
 
-### After Coding
-8. **Goal-Driven Verification**: Give success criteria, not step-by-step instructions. "This test should pass" is more effective than "first do A then do B."
-9. **Auto-Verify**: After every modification, run linter + tests. If they fail, don't continue. Max 3 self-correction attempts, then stop and explain.
-10. **Intent Verification**: After completing 3 sub-steps, pause and confirm "what I built is what you want."
+### After Coding (Evidence, Not Assertions)
+9. **Goal-Driven Verification**: Give success criteria, not step-by-step instructions. "This test should pass" is more effective than "first do A then do B."
+10. **Auto-Verify**: After every modification, run linter + tests. If they fail, don't continue. Max 3 self-correction attempts, then stop and explain.
+11. **Evidence-Based Completion**: Prove completion with evidence (test output, command results, screenshot comparison), not assertions like "modification complete." No runnable check = no completion signal. This is Anthropic's "Give Claude a way to verify its work."
+12. **Adversarial Review**: After important changes, review your own work from an adversarial perspective — "If I were a reviewer, what would I question?" The person doing the work shouldn't be the one grading it. This is Anthropic's "Add an adversarial review step."
 
-### Process
-11. **Context Management**: Context window is the most important resource. Update PROJECT_CONTEXT.md after major changes. Keep rule files lean, detailed content goes in skills.
-12. **Show Your Work**: Before complex changes, state the plan. After completion, summarize changes. Prove completion with evidence (test output, command results), not assertions.
+### Process (Course-Correct Early, Manage Context)
+13. **Course-Correct Early**: Check direction after every sub-step, don't save it for the end. Must do intent verification within 3 steps. This is Anthropic's "Course-correct early and often."
+14. **Context Budget**: Context window is the most important resource. Keep rule files lean (<100 lines). Detailed content goes in skills loaded on demand. Proactively summarize and compress when conversations get long.
+15. **Show Your Work**: Before complex changes, state the plan. After completion, summarize changes.
 
 ---
 
