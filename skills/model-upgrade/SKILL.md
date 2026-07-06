@@ -1,12 +1,14 @@
 ---
 name: model-upgrade
-description: "Engineering framework that enables any AI coding assistant to achieve GPT/Claude parity through five layers of defense: structured rules, context injection, task decomposition, test-feedback loops, and last-mile delivery guarantee. Always activate first in any coding session. Enforces discipline, provides templates, manages the full lifecycle — making weaker models produce production-grade output through process, not raw capability."
+description: "Engineering framework v3 that enables domestic AI models (GLM, DeepSeek, Qwen, etc.) to achieve GPT/Codex-level output quality through a three-layer architecture: Short Constitution (10 iron rules), Capability Enhancement (reasoning, diagnosis, consistency), and Execution Templates (fixed formats). Designed for the TRAE CN ecosystem. Core formula: Quality = Model_Raw × Engineering_Multiplier."
 license: Apache-2.0
 ---
 
-# Model Upgrade Framework — 模型升级计划
+# Model Upgrade Framework v3 — 国产模型三层增强器
 
-> **Premise:** Domestic AI models are very close to GPT/Claude in single-turn code generation. The gap widens only in: complex multi-step reasoning, instruction following, self-correction loops, and long-context maintenance. This framework bridges that gap through engineering discipline.
+> **Premise:** Domestic AI models reach 70-80% of GPT/Codex level in single-turn code generation. The gap is in: deep multi-step reasoning, problem diagnosis, long-context consistency, and tool combination. v3 bridges this gap through a **three-layer architecture** — not by making the model smarter, but by giving it a better operating system.
+
+> **What's new in v3:** Restructured from five-layer defense to three-layer architecture. Short Constitution for memory efficiency, Capability Enhancement for reasoning depth, Execution Templates for output stability. Added Loop-driven workflow, Context Protection, Decision Log, Open/Closed Loop, and trigger-based activation.
 
 ## Core Formula
 
@@ -44,21 +46,21 @@ If the model is 80% of GPT's raw capability but you multiply it by 1.5x through 
 
 **Exception**: When user explicitly says "quick answer" / "skip rules" / "just do it", startup protocol can be skipped, but security-related iron rules (#7 No Silent Failures, #8 Security Annotation) still apply.
 
-## Five-Layer Defense System
+## Three-Layer Architecture (v3)
 
-| Layer | Name | Purpose |
-|-------|------|---------|
-| 1 | Project Constitution | Non-negotiable rules |
-| 2 | Context Injection | Full project awareness |
-| 3 | Task Decomposition | Big → small, verifiable steps |
-| 4 | Test-Feedback Loop | Generate → verify → self-correct |
-| 5 | Last-Mile Defense | 90%→100% delivery guarantee |
+| Layer | Name | Purpose | Model Gap Addressed |
+|-------|------|---------|---------------------|
+| 1 | Short Constitution | 10 iron rules, light enough to remember every round | Instruction following |
+| 2 | Capability Enhancement | Reasoning, diagnosis, consistency, context protection | Deep reasoning, long-context |
+| 3 | Execution Templates | Fixed formats, no free-form output | Output stability, tool use |
+
+> **Key design principle:** Each layer is trigger-based. Simple tasks only use Layer 1. Complex tasks activate Layers 2+3. This minimizes token waste while maximizing quality for critical work.
 
 ---
 
-## Layer 1: Project Constitution — 15 Iron Rules
+## Layer 1: Short Constitution — 10 Iron Rules
 
-> Inspired by: Karpathy's 4 fatal diseases of LLM coding, Anthropic Claude Code best practices, Harness Engineering 8-layer constraints.
+> **v3 update:** Reduced from 15 to 10 rules. The remaining 5 rules (auto-verify, adversarial review, course-correct, context budget, show work) are now in the flow section or Capability Enhancement layer.
 > Key insight from Anthropic: "The context window is the most important resource to manage." and "If Claude keeps doing something wrong despite a rule, the file is probably too long."
 
 ### Before Coding (Explore First)
