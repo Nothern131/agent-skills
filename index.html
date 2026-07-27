@@ -1,0 +1,1757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>心口不一算法 — 互动对话演示</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:#0B0E14;color:#E8E6E3;font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+  height:100vh;overflow:hidden;user-select:none;
+}
+.app{display:flex;height:100vh}
+/* ═══ 左侧 NPC 面板 ═══ */
+.sidebar{
+  width:260px;min-width:260px;background:#11151D;border-right:1px solid #1E2430;
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.sidebar-header{padding:16px;border-bottom:1px solid #1E2430}
+.sidebar-header h2{font-size:14px;color:#F0B958;font-weight:600}
+.sidebar-header .desc{font-size:10px;color:#6B7280;margin-top:4px}
+.npc-list{flex:1;overflow-y:auto;padding:8px}
+.npc-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
+  cursor:pointer;border:1px solid transparent;transition:all .2s;margin-bottom:4px;
+  position:relative;
+}
+.npc-item:hover{background:#1A1D27}
+.npc-item.active{border-color:#F0B958;background:rgba(240,185,88,.08)}
+.npc-item .avatar{
+  width:36px;height:36px;border-radius:50%;display:flex;
+  align-items:center;justify-content:center;font-size:16px;flex-shrink:0;
+}
+.npc-item .info{flex:1;min-width:0}
+.npc-item .info .name{font-size:13px;font-weight:600}
+.npc-item .info .role{font-size:10px;color:#6B7280}
+.npc-item .dot{
+  width:6px;height:6px;border-radius:50%;flex-shrink:0;
+  opacity:0;transition:opacity .3s;
+}
+.npc-item .dot.lit{opacity:1;animation:pulse .8s ease infinite}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.8)}}
+/* 性格条 */
+.npc-panel{display:none;padding:12px;border-top:1px solid #1E2430}
+.npc-panel.show{display:block}
+.npc-panel h3{font-size:11px;color:#6B7280;margin-bottom:8px;letter-spacing:1px}
+.trait-row{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.trait-row .trait-label{width:32px;font-size:9px;color:#9CA3AF;text-align:right;flex-shrink:0}
+.trait-row .trait-bar{flex:1;height:4px;background:#1E2430;border-radius:2px;overflow:hidden}
+.trait-row .trait-fill{height:100%;border-radius:2px;transition:width .3s}
+.trait-row .trait-val{width:24px;font-size:9px;color:#6B7280;text-align:right;flex-shrink:0}
+.trait-row input[type=range]{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:#1E2430;border-radius:2px;cursor:pointer}
+.trait-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#F0B958;cursor:pointer}
+
+/* ═══ 中央聊天区 ═══ */
+.chat-area{flex:1;display:flex;flex-direction:column;min-width:0}
+.chat-header{
+  padding:12px 20px;border-bottom:1px solid #1E2430;display:flex;
+  align-items:center;gap:12px;flex-shrink:0;
+}
+.chat-header .ctx-picker{display:flex;gap:6px;flex-wrap:wrap}
+.chat-header .ctx-pill{
+  padding:4px 12px;border-radius:14px;border:1px solid #2A2D37;font-size:10px;
+  cursor:pointer;background:#1A1D27;color:#9CA3AF;font-family:inherit;transition:all .2s;
+}
+.chat-header .ctx-pill:hover{border-color:#4ADE80;color:#E8E6E3}
+.chat-header .ctx-pill.on{background:rgba(74,222,128,.15);color:#4ADE80;border-color:#4ADE80}
+.chat-messages{
+  flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:10px;
+  scroll-behavior:smooth;
+}
+.chat-messages::-webkit-scrollbar{width:4px}
+.chat-messages::-webkit-scrollbar-thumb{background:#2A2D37;border-radius:2px}
+/* 空状态 */
+.empty-state{flex:1;display:flex;align-items:center;justify-content:center;color:#4B5563;font-size:14px;text-align:center;line-height:2}
+.empty-state b{color:#F0B958}
+/* 消息气泡 */
+.msg-row{display:flex;flex-direction:column;animation:msgIn .4s ease both}
+@keyframes msgIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.msg-row.user{align-items:flex-end}
+.msg-row.npc{align-items:flex-start}
+.msg-row .msg-meta{font-size:9px;color:#4B5563;margin-bottom:2px;padding:0 4px}
+.msg-row .msg-bubble{
+  max-width:70%;padding:10px 16px;border-radius:14px;font-size:14px;line-height:1.7;
+}
+.msg-row.user .msg-bubble{background:#1E3A5F;color:#93C5FD;border-bottom-right-radius:4px}
+.msg-row.npc .msg-bubble{background:#252836;color:#E8E6E3;border-bottom-left-radius:4px}
+/* NPC 双气泡 */
+.dual-bubble{display:flex;flex-direction:column;gap:6px;max-width:70%}
+.dual-bubble .surface-bubble{
+  padding:10px 16px;border-radius:14px;border-bottom-left-radius:4px;
+  background:#252836;color:#E8E6E3;font-size:14px;line-height:1.7;
+  border-left:3px solid #4ADE80;
+}
+.dual-bubble .inner-bubble{
+  padding:10px 16px;border-radius:14px;border-bottom-left-radius:4px;
+  background:rgba(168,123,250,.1);color:#A78BFA;font-size:13px;line-height:1.7;
+  border-left:3px solid #A78BFA;font-style:italic;
+}
+.dual-bubble .bubble-label{
+  font-size:8px;font-weight:700;letter-spacing:2px;margin-bottom:4px;display:block;
+}
+.dual-bubble .surface-bubble .bubble-label{color:#4ADE80}
+.dual-bubble .inner-bubble .bubble-label{color:#A78BFA}
+/* 分歧标签 */
+.div-tag{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:6px;
+  font-size:10px;font-weight:600;margin-top:4px;
+}
+/* 分隔线 */
+.divider{display:flex;align-items:center;gap:8px;margin:4px 0;animation:msgIn .4s ease both}
+.divider .line{flex:1;height:1px;background:#1E2430}
+.divider .text{font-size:9px;color:#4B5563;white-space:nowrap;letter-spacing:1px}
+
+/* ═══ 右侧算法面板 ═══ */
+.algo-panel{
+  width:300px;min-width:300px;background:#11151D;border-left:1px solid #1E2430;
+  display:flex;flex-direction:column;overflow-y:auto;padding:16px;
+}
+.algo-panel h3{font-size:12px;color:#F0B958;margin-bottom:10px;letter-spacing:1px}
+.algo-panel .section{margin-bottom:16px}
+.algo-panel .section-title{font-size:10px;color:#6B7280;letter-spacing:1px;margin-bottom:6px}
+.algo-step{
+  padding:8px 10px;border-radius:8px;background:#1A1D27;margin-bottom:6px;
+  font-size:10px;color:#9CA3AF;border-left:2px solid #2A2D37;transition:all .3s;
+}
+.algo-step.active{border-left-color:#4ADE80;background:rgba(74,222,128,.05)}
+.algo-step .step-num{color:#4ADE80;font-weight:700;margin-right:4px}
+.algo-step .step-action{color:#E8E6E3;font-weight:600}
+.algo-step .step-result{color:#F0B958;margin-top:2px}
+.algo-decision{
+  padding:10px;border-radius:8px;background:rgba(192,132,252,.08);border:1px solid rgba(192,132,252,.2);
+  font-size:10px;color:#C084FC;margin-top:8px;text-align:center;display:none;
+}
+.algo-decision.show{display:block;animation:msgIn .3s ease both}
+.type-list{display:flex;flex-direction:column;gap:4px}
+.type-item{display:flex;align-items:center;gap:6px;font-size:10px;padding:4px 8px;border-radius:6px;background:#1A1D27}
+.type-item .dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.type-item .score{font-family:"JetBrains Mono",monospace;color:#F0B958;margin-left:auto}
+
+/* ═══ 输入区 ═══ */
+.input-area{
+  padding:12px 20px;border-top:1px solid #1E2430;display:flex;gap:10px;flex-shrink:0;
+}
+.input-area input{
+  flex:1;padding:10px 16px;border-radius:10px;border:1px solid #2A2D37;
+  background:#1A1D27;color:#E8E6E3;font-size:13px;font-family:inherit;outline:none;
+  transition:border-color .2s;
+}
+.input-area input:focus{border-color:#F0B958}
+.input-area input::placeholder{color:#4B5563}
+.input-area button{
+  padding:10px 18px;border-radius:10px;border:1px solid #F0B958;
+  background:rgba(240,185,88,.15);color:#F0B958;font-size:13px;cursor:pointer;
+  font-family:inherit;transition:all .2s;white-space:nowrap;
+}
+.input-area button:hover{background:rgba(240,185,88,.25)}
+.input-area button:disabled{opacity:.4;cursor:not-allowed}
+/* 快捷短语 */
+.quick-phrases{display:flex;gap:6px;padding:4px 20px 8px;flex-wrap:wrap;flex-shrink:0}
+.quick-phrase{
+  padding:3px 10px;border-radius:10px;border:1px solid #2A2D37;font-size:10px;
+  cursor:pointer;background:#1A1D27;color:#6B7280;font-family:inherit;transition:all .2s;
+}
+.quick-phrase:hover{border-color:#4ADE80;color:#E8E6E3}
+/* 删除按钮 */
+.npc-delete-btn{
+  position:absolute;top:4px;right:4px;width:18px;height:18px;border-radius:50%;
+  border:none;background:rgba(248,113,113,.15);color:#F87171;font-size:11px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;
+}
+.npc-item:hover .npc-delete-btn{opacity:1}
+.npc-delete-btn:hover{background:rgba(248,113,113,.3)}
+/* 添加NPC按钮 */
+.npc-add-btn{
+  display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;
+  margin:8px;border-radius:10px;border:1px dashed #2A2D37;background:transparent;
+  color:#6B7280;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.npc-add-btn:hover{border-color:#F0B958;color:#F0B958;background:rgba(240,185,88,.05)}
+/* 创建面板（模态） */
+.create-backdrop{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,.6);z-index:100;backdrop-filter:blur(4px);
+}
+.create-backdrop.open{display:block}
+.create-panel{
+  display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:420px;max-height:85vh;background:#11151D;border:1px solid #1E2430;
+  border-radius:16px;z-index:101;flex-direction:column;overflow:hidden;
+  box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+.create-panel.open{display:flex}
+.create-panel-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px;border-bottom:1px solid #1E2430;
+}
+.create-panel-head span{font-size:14px;color:#F0B958;font-weight:600}
+.create-panel-head button{
+  width:28px;height:28px;border-radius:50%;border:none;
+  background:rgba(248,113,113,.1);color:#F87171;font-size:14px;cursor:pointer;
+}
+.create-panel-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.create-field{display:flex;flex-direction:column;gap:4px}
+.create-label{font-size:10px;color:#6B7280;letter-spacing:1px;font-weight:600}
+.create-input,.create-select{
+  padding:8px 12px;border-radius:8px;border:1px solid #2A2D37;
+  background:#1A1D27;color:#E8E6E3;font-size:13px;font-family:inherit;outline:none;
+}
+.create-input:focus,.create-select:focus{border-color:#F0B958}
+.create-row{display:flex;gap:10px}
+.create-row .create-field{flex:1}
+.create-color{width:100%;height:34px;border:none;border-radius:8px;cursor:pointer;background:transparent}
+.create-preview{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;background:#1A1D27}
+.create-preview-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.create-preview-info{font-size:11px;color:#9CA3AF;line-height:1.5}
+.create-preview-info strong{color:#E8E6E3}
+.create-presets{display:flex;flex-wrap:wrap;gap:6px}
+.preset-btn{
+  padding:4px 10px;border-radius:6px;border:1px solid #2A2D37;
+  background:#1A1D27;color:#9CA3AF;font-size:10px;cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.preset-btn:hover{border-color:#C084FC;color:#C084FC}
+.create-traits{display:flex;flex-direction:column;gap:6px}
+.create-trait{display:flex;align-items:center;gap:8px}
+.create-trait label{width:32px;font-size:10px;color:#9CA3AF;text-align:right;flex-shrink:0}
+.create-trait input[type=range]{flex:1;height:4px;-webkit-appearance:none;appearance:none;background:#1E2430;border-radius:2px;cursor:pointer}
+.create-trait input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:#F0B958;cursor:pointer}
+.create-trait .mt-val{width:24px;font-size:9px;color:#6B7280;text-align:right;flex-shrink:0}
+.create-actions{display:flex;gap:8px;padding:16px 20px;border-top:1px solid #1E2430}
+.create-actions button{
+  flex:1;padding:8px;border-radius:8px;border:1px solid #2A2D37;
+  background:#1A1D27;color:#9CA3AF;font-size:12px;cursor:pointer;font-family:inherit;transition:all .2s;
+}
+.create-actions button.primary{background:rgba(240,185,88,.15);color:#F0B958;border-color:#F0B958}
+.create-actions button.primary:hover{background:rgba(240,185,88,.25)}
+.create-actions button.danger{background:rgba(248,113,113,.1);color:#F87171;border-color:rgba(248,113,113,.3)}
+.create-actions button.danger:hover{background:rgba(248,113,113,.2)}
+
+/* ═══ 响应式 ═══ */
+@media(max-width:900px){
+  .sidebar{width:200px;min-width:200px}
+  .algo-panel{width:220px;min-width:220px}
+}
+@media(max-width:680px){
+  .algo-panel{display:none}
+  .sidebar{width:160px;min-width:160px}
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ═══════════ 左侧 NPC 面板 ═══════════ -->
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <h2>NPC 角色</h2>
+      <div class="desc">点击选择对话对象</div>
+    </div>
+    <div class="npc-list" id="npcList"></div>
+    <button class="npc-add-btn" onclick="openCreatePanel()">+ 添加NPC</button>
+    <div class="npc-panel" id="npcPanel">
+      <h3>性格参数（可拖动调整）</h3>
+      <div id="traitSliders"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ 中央聊天区 ═══════════ -->
+  <div class="chat-area">
+    <div class="chat-header">
+      <div class="ctx-picker" id="ctxPicker"></div>
+    </div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="empty-state">
+        <div>
+          <b>点击左侧NPC头像开始对话</b><br>
+          输入你想说的话，看NPC<br>
+          表面回答 vs 真实想法
+        </div>
+      </div>
+    </div>
+    <div class="quick-phrases" id="quickPhrases"></div>
+    <div class="input-area">
+      <input type="text" id="msgInput" placeholder="输入你想对NPC说的话..." disabled>
+      <button id="sendBtn" onclick="sendMessage()" disabled>发送</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ 右侧算法面板 ═══════════ -->
+  <div class="algo-panel" id="algoPanel">
+    <h3>算法决策追踪</h3>
+    <div class="section">
+      <div class="section-title">步骤 1：关键词提取</div>
+      <div class="algo-step" id="step1">等待输入...</div>
+    </div>
+    <div class="section">
+      <div class="section-title">步骤 2：情境推断</div>
+      <div class="algo-step" id="step2">等待输入...</div>
+    </div>
+    <div class="section">
+      <div class="section-title">步骤 3：5种分歧评分</div>
+      <div class="type-list" id="typeList">
+        <div class="type-item"><span class="dot" style="background:#4ADE80"></span>善意谎言 <span class="score">-</span></div>
+        <div class="type-item"><span class="dot" style="background:#F0B958"></span>心口不一 <span class="score">-</span></div>
+        <div class="type-item"><span class="dot" style="background:#F87171"></span>隐藏恐惧 <span class="score">-</span></div>
+        <div class="type-item"><span class="dot" style="background:#60A5FA"></span>沉默风暴 <span class="score">-</span></div>
+        <div class="type-item"><span class="dot" style="background:#C084FC"></span>社交伪装 <span class="score">-</span></div>
+      </div>
+    </div>
+    <div class="algo-decision" id="algoDecision"></div>
+  </div>
+</div>
+
+<!-- ═══════════ 创建NPC面板（模态） ═══════════ -->
+<div class="create-backdrop" id="createBackdrop" onclick="closeCreatePanel()"></div>
+<div class="create-panel" id="createPanel">
+  <div class="create-panel-head">
+    <span>✦ 孕育新意识体</span>
+    <button onclick="closeCreatePanel()">✕</button>
+  </div>
+  <div class="create-panel-body">
+    <div class="create-field"><label class="create-label">名称</label><input type="text" class="create-input" id="c-name" placeholder="新角色名字" maxlength="6" oninput="updateCreatePreview()"></div>
+    <div class="create-row">
+      <div class="create-field"><label class="create-label">身份</label><input type="text" class="create-input" id="c-role" list="role-presets" placeholder="输入或选择…" maxlength="6" oninput="updateCreatePreview()"><datalist id="role-presets"><option value="猎户"><option value="铁匠"><option value="书生"><option value="侠客"><option value="村民"><option value="郎中"><option value="厨子"><option value="渔夫"><option value="樵夫"><option value="商贩"><option value="酒鬼"><option value="乞丐"><option value="更夫"><option value="货郎"><option value="屠户"><option value="绣娘"><option value="画师"><option value="琴师"><option value="说书"><option value="道士"></datalist></div>
+      <div class="create-field"><label class="create-label">头像</label><input type="text" class="create-select" id="c-avatar" list="avatar-presets" placeholder="🗡" maxlength="2" oninput="updateCreatePreview()"><datalist id="avatar-presets"><option value="🗡"><option value="🛡"><option value="🏹"><option value="🧙"><option value="🕯"><option value="🐺"><option value="🦊"><option value="🐴"><option value="⚒"><option value="🐟"><option value="🍺"><option value="🎭"><option value="🌿"><option value="🎪"><option value="⚡"><option value="⚔"><option value="🪓"><option value="🔥"><option value="💧"><option value="🌙"></datalist></div>
+    </div>
+    <div class="create-row">
+      <div class="create-field"><label class="create-label">色调</label><input type="color" class="create-color" id="c-color" value="#60a5fa" oninput="updateCreatePreview()"></div>
+      <div class="create-field"><label class="create-label">说话风格</label><input type="text" class="create-select" id="c-style" list="style-presets" placeholder="普普通通" maxlength="6" oninput="updateCreatePreview()"><datalist id="style-presets"><option value="沉默寡言"><option value="普普通通"><option value="絮絮叨叨"><option value="温温柔柔"></datalist></div>
+    </div>
+    <div class="create-preview">
+      <div class="create-preview-avatar" id="createPreviewAvatar" style="background:rgba(96,165,250,.1);color:#60a5fa">🗡</div>
+      <div class="create-preview-info">预览：<strong id="createPreviewName">新意识体</strong><br><span id="createPreviewRole">村民</span></div>
+    </div>
+    <label class="create-label">性格参数 <span style="font-weight:400;font-size:9px;color:#6B7280;margin-left:4px">预设</span></label>
+    <div class="create-presets">
+      <button class="preset-btn" onclick="applyPreset('热心肠')" title="正义↑善良↑社交↑">热心肠</button>
+      <button class="preset-btn" onclick="applyPreset('铁公鸡')" title="贪婪↑沉默↑">铁公鸡</button>
+      <button class="preset-btn" onclick="applyPreset('急性子')" title="暴躁↑好奇↑">急性子</button>
+      <button class="preset-btn" onclick="applyPreset('老好人')" title="善良↑沉默↑">老好人</button>
+      <button class="preset-btn" onclick="applyPreset('独行侠')" title="沉默↑勇敢↑社交↓">独行侠</button>
+      <button class="preset-btn" onclick="applyPreset('乐天派')" title="善良↑好奇↑">乐天派</button>
+    </div>
+    <div class="create-traits" id="c-traits"></div>
+  </div>
+  <div class="create-actions">
+    <button onclick="randomizeTraits()">🎲 随机</button>
+    <button class="primary" onclick="createNPC()">✦ 孕育</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════ 数据定义（来自灵魂工坊 v4 真实产品） ═══════════════
+var NPCS=[
+  {id:'A',name:'云溪',role:'侠客',roleEco:'护卫',avatar:'⚔',color:'#60a5fa',personality:{正义:92,勇敢:85,沉默:75,贪婪:8,善良:78,暴躁:18,好奇:45,社交:30,勤劳:70,懒惰:15},speechStyle:'silent',mood:'neutral',moodHistory:[],anger:8,trust:60,happiness:42,memories:[],activeGoal:null,planQueue:[],socialFatigue:0,hunger:50,energy:100,lastDialogue:null,opinions:[],grudges:{},favors:{},habits:{},beliefs:{},dissonance:[],attentionLocked:false,attentionTarget:null,attentionUntil:0,emotionalState:{fear:0,urgency:0,relief:0,aftermath:0},reflections:[],commitments:[],position:{x:0,y:0},frustration:0,stressTicks:0,exhaustion:0,subcultures:[],inventory:{food:5,tools:3,coin:30,iron:1}},
+  {id:'B',name:'阿福',role:'村民',roleEco:'铁匠',avatar:'🍞',color:'#f0b958',personality:{正义:45,勇敢:28,沉默:20,贪婪:68,善良:55,暴躁:42,好奇:72,社交:75,勤劳:35,懒惰:60},speechStyle:'talkative',mood:'neutral',moodHistory:[],anger:25,trust:35,happiness:55,memories:[],activeGoal:null,planQueue:[],socialFatigue:0,hunger:50,energy:90,lastDialogue:null,opinions:[],grudges:{},favors:{},habits:{},beliefs:{},dissonance:[],attentionLocked:false,attentionTarget:null,attentionUntil:0,emotionalState:{fear:0,urgency:0,relief:0,aftermath:0},reflections:[],commitments:[],position:{x:0,y:0},frustration:0,stressTicks:0,exhaustion:0,subcultures:[],inventory:{food:3,tools:5,coin:15,iron:4}},
+  {id:'C',name:'小翠',role:'少女',roleEco:'采集者',avatar:'🌸',color:'#4ade80',personality:{正义:60,勇敢:35,沉默:45,贪婪:12,善良:88,暴躁:10,好奇:55,社交:55,勤劳:65,懒惰:25},speechStyle:'gentle',mood:'neutral',moodHistory:[],anger:5,trust:70,happiness:65,memories:[],activeGoal:null,planQueue:[],socialFatigue:0,hunger:50,energy:85,lastDialogue:null,opinions:[],grudges:{},favors:{},habits:{},beliefs:{},dissonance:[],attentionLocked:false,attentionTarget:null,attentionUntil:0,emotionalState:{fear:0,urgency:0,relief:0,aftermath:0},reflections:[],commitments:[],position:{x:0,y:0},frustration:0,stressTicks:0,exhaustion:0,subcultures:[],inventory:{food:8,tools:2,coin:10,iron:0}},
+  {id:'D',name:'老村长',role:'村长',roleEco:'管理者',avatar:'🏮',color:'#ffa84d',personality:{正义:78,勇敢:55,沉默:50,贪婪:22,善良:72,暴躁:25,好奇:30,社交:70,勤劳:60,懒惰:30},speechStyle:'normal',mood:'neutral',moodHistory:[],anger:12,trust:75,happiness:50,memories:[],activeGoal:null,planQueue:[],socialFatigue:0,hunger:50,energy:75,lastDialogue:null,opinions:[],grudges:{},favors:{},habits:{},beliefs:{},dissonance:[],attentionLocked:false,attentionTarget:null,attentionUntil:0,emotionalState:{fear:0,urgency:0,relief:0,aftermath:0},reflections:[],commitments:[],position:{x:0,y:0},frustration:0,stressTicks:0,exhaustion:0,subcultures:[],inventory:{food:6,tools:2,coin:40,iron:0}},
+  {id:'E',name:'书生',role:'书生',roleEco:'记录者',avatar:'📜',color:'#c084fc',personality:{正义:55,勇敢:20,沉默:65,贪婪:15,善良:65,暴躁:8,好奇:82,社交:40,勤劳:30,懒惰:55},speechStyle:'normal',mood:'neutral',moodHistory:[],anger:3,trust:55,happiness:48,memories:[],activeGoal:null,planQueue:[],socialFatigue:0,hunger:50,energy:80,lastDialogue:null,opinions:[],grudges:{},favors:{},habits:{},beliefs:{},dissonance:[],attentionLocked:false,attentionTarget:null,attentionUntil:0,emotionalState:{fear:0,urgency:0,relief:0,aftermath:0},reflections:[],commitments:[],position:{x:0,y:0},frustration:0,stressTicks:0,exhaustion:0,subcultures:[],inventory:{food:4,tools:1,coin:25,iron:0}}
+];
+var REL={
+  'A':{'B':{t:25,r:'债'},'C':{t:68,r:'好感'},'D':{t:75,r:'恩'},'E':{t:50,r:'识'}},
+  'B':{'A':{t:20,r:'怕'},'C':{t:55,r:'愧'},'D':{t:35,r:'忌'},'E':{t:40,r:'识'}},
+  'C':{'A':{t:72,r:'好感'},'B':{t:58,r:'同情'},'D':{t:65,r:'敬'},'E':{t:55,r:'识'}},
+  'D':{'A':{t:80,r:'信'},'B':{t:30,r:'疑'},'C':{t:70,r:'亲'},'E':{t:55,r:'识'}},
+  'E':{'A':{t:65,r:'慕'},'B':{t:40,r:'轻'},'C':{t:58,r:'好感'},'D':{t:60,r:'敬'}}
+};
+var nextNPCId=0;
+var traits=['正义','勇敢','沉默','贪婪','善良','暴躁','好奇','社交','勤劳','懒惰'];
+
+// ═══════════════ 语义理解引擎（来自灵魂工坊 v4） ═══════════════
+// 模拟NPC对词汇的"理解"：词→概念→性格加权→情绪反应
+var SEMANTIC_MAP={
+  // ═══ 人物/身份 ═══
+  '陌生人':{concepts:['外来者','未知'],emo:{fear:2,curiosity:4}},
+  '村民':{concepts:['同乡','自己人'],emo:{trust:3,safety:2}},
+  '侠客':{concepts:['武者','仗义'],emo:{respect:3,fear:1}},
+  '村长':{concepts:['权威','长者'],emo:{respect:3,trust:1}},
+  '少女':{concepts:['年轻','柔弱'],emo:{sympathy:2,protect:2}},
+  '书生':{concepts:['文雅','知识'],emo:{respect:2,curiosity:1}},
+  '朋友':{concepts:['亲近','信任','陪伴'],emo:{trust:5,warmth:4}},
+  '敌人':{concepts:['对立','威胁','冲突'],emo:{fear:4,anger:4}},
+  '伙伴':{concepts:['合作','信任','同行'],emo:{trust:4,warmth:3}},
+  // ═══ 伤害/危险 ═══
+  '受伤':{concepts:['伤害','痛苦','脆弱'],emo:{sympathy:5,fear:2}},
+  '血':{concepts:['暴力','伤害','危险'],emo:{fear:6,anger:2}},
+  '死':{concepts:['终结','恐惧','失去'],emo:{fear:8,sadness:6}},
+  '杀':{concepts:['暴力','终结','威胁'],emo:{fear:8,anger:5}},
+  '毒':{concepts:['危险','阴谋','伤害'],emo:{fear:6,anger:4}},
+  '伤':{concepts:['伤害','痛苦','脆弱'],emo:{sympathy:4,fear:2}},
+  '痛':{concepts:['痛苦','不适','脆弱'],emo:{sympathy:4,sadness:2}},
+  // ═══ 犯罪/冲突 ═══
+  '偷':{concepts:['犯罪','损失','不公'],emo:{anger:7,fear:1}},
+  '抢':{concepts:['暴力','犯罪','不公'],emo:{anger:7,fear:5}},
+  '骗':{concepts:['欺骗','背叛','不公'],emo:{anger:6,sadness:3}},
+  '撒谎':{concepts:['欺骗','背叛','不诚实'],emo:{anger:5,sadness:3}},
+  '说谎':{concepts:['欺骗','背叛','不诚实'],emo:{anger:5,sadness:3}},
+  '吵':{concepts:['冲突','不和','对立'],emo:{anger:4,annoyance:5}},
+  '打':{concepts:['暴力','攻击','冲突'],emo:{fear:5,anger:5}},
+  '斗':{concepts:['冲突','对抗','暴力'],emo:{fear:4,anger:4}},
+  // ═══ 财富/交易 ═══
+  '钱':{concepts:['财富','交易','资源'],emo:{greed:5,desire:3}},
+  '银子':{concepts:['财富','交易','资源'],emo:{greed:5,desire:3}},
+  '银两':{concepts:['财富','交易','资源'],emo:{greed:5,desire:3}},
+  '金子':{concepts:['财富','珍贵','贪婪'],emo:{greed:7,desire:4}},
+  '黄金':{concepts:['财富','珍贵','贪婪'],emo:{greed:7,desire:4}},
+  '发财':{concepts:['财富','机会','贪婪'],emo:{greed:6,desire:5}},
+  '赚钱':{concepts:['财富','机会','交易'],emo:{greed:4,desire:4}},
+  '富裕':{concepts:['财富','满足','资源'],emo:{desire:3,calm:1}},
+  '宝物':{concepts:['珍贵','财富','稀有'],emo:{greed:4,desire:4,curiosity:3}},
+  '宝贝':{concepts:['珍贵','稀有','保护'],emo:{desire:3,protect:3}},
+  // ═══ 情绪——负面 ═══
+  '难过':{concepts:['悲伤','痛苦','脆弱'],emo:{sadness:7,sympathy:5}},
+  '伤心':{concepts:['悲伤','痛苦','失去'],emo:{sadness:7,sympathy:5}},
+  '悲伤':{concepts:['悲伤','痛苦','失去'],emo:{sadness:8,sympathy:4}},
+  '沮丧':{concepts:['悲伤','失落','无力'],emo:{sadness:5,anxiety:3}},
+  '郁闷':{concepts:['悲伤','不满','压抑'],emo:{sadness:4,annoyance:3}},
+  '哭':{concepts:['悲伤','痛苦','脆弱'],emo:{sympathy:6,sadness:5}},
+  '泪':{concepts:['悲伤','痛苦','脆弱'],emo:{sympathy:5,sadness:5}},
+  '恨':{concepts:['仇恨','敌意','对立'],emo:{anger:8,hatred:7}},
+  '讨厌':{concepts:['厌恶','排斥','不满'],emo:{anger:5,annoyance:6}},
+  '厌恶':{concepts:['厌恶','排斥','反感'],emo:{anger:5,annoyance:7}},
+  '烦':{concepts:['不满','焦虑','压力'],emo:{annoyance:5,anxiety:3}},
+  '生气':{concepts:['愤怒','不满','冲突'],emo:{anger:7,annoyance:5}},
+  '愤怒':{concepts:['愤怒','暴力','冲突'],emo:{anger:8,fear:2}},
+  '恼火':{concepts:['愤怒','不满','烦躁'],emo:{anger:6,annoyance:5}},
+  '怕':{concepts:['恐惧','威胁','逃避'],emo:{fear:7,anxiety:4}},
+  '害怕':{concepts:['恐惧','威胁','逃避'],emo:{fear:8,anxiety:5}},
+  '恐惧':{concepts:['恐惧','威胁','逃避'],emo:{fear:9,anxiety:6}},
+  '紧张':{concepts:['压力','不安','警惕'],emo:{anxiety:4,fear:2}},
+  '后悔':{concepts:['遗憾','自责','悲伤'],emo:{sadness:5,regret:6}},
+  '遗憾':{concepts:['悲伤','失去','错过'],emo:{sadness:5,regret:5}},
+  '孤独':{concepts:['悲伤','孤立','社交'],emo:{sadness:6,sympathy:3}},
+  '寂寞':{concepts:['悲伤','孤立','社交'],emo:{sadness:5,sympathy:3}},
+  // ═══ 情绪——正面 ═══
+  '开心':{concepts:['快乐','满足','正面'],emo:{happiness:7,warmth:4}},
+  '高兴':{concepts:['快乐','满足','正面'],emo:{happiness:7,warmth:4}},
+  '快乐':{concepts:['快乐','满足','正面'],emo:{happiness:8,warmth:3}},
+  '幸福':{concepts:['快乐','满足','归属'],emo:{happiness:8,warmth:5}},
+  '笑':{concepts:['快乐','友好','善意'],emo:{happiness:5,warmth:3}},
+  '喜欢':{concepts:['好感','亲近','正面'],emo:{warmth:6,happiness:4}},
+  '爱':{concepts:['深情','亲近','奉献'],emo:{warmth:8,happiness:5}},
+  '中意':{concepts:['好感','选择','正面'],emo:{warmth:5,happiness:3}},
+  '感谢':{concepts:['感激','善意','回报'],emo:{gratitude:7,warmth:4}},
+  '谢谢':{concepts:['感激','善意','礼貌'],emo:{gratitude:6,warmth:3}},
+  '感激':{concepts:['感激','善意','回报'],emo:{gratitude:8,warmth:4}},
+  '希望':{concepts:['期待','正面','未来'],emo:{hope:7,energy:3}},
+  '愿望':{concepts:['期待','渴望','未来'],emo:{hope:6,desire:3}},
+  '梦想':{concepts:['期待','渴望','未来'],emo:{hope:7,desire:4}},
+  // ═══ 生理/身体 ═══
+  '饿':{concepts:['缺乏','需要','生存'],emo:{sympathy:2,urgency:2}},
+  '渴':{concepts:['缺乏','需要','生存'],emo:{sympathy:2,urgency:2}},
+  '累':{concepts:['疲惫','需要休息','体力'],emo:{sympathy:2,tired:3}},
+  '疲惫':{concepts:['疲惫','需要休息','体力'],emo:{sympathy:3,tired:4}},
+  '困':{concepts:['疲惫','需要休息','睡眠'],emo:{sympathy:1,tired:3}},
+  '病':{concepts:['脆弱','痛苦','伤害','疾病'],emo:{sadness:5,sympathy:4,fear:3}},
+  '瘟疫':{concepts:['恐惧','脆弱','损失','紧急','疾病'],emo:{fear:9,sadness:7}},
+  // ═══ 动作/行为 ═══
+  '丢':{concepts:['失去','缺失','寻找'],emo:{sadness:3,anxiety:2}},
+  '找':{concepts:['搜寻','渴望','需求'],emo:{curiosity:4,anxiety:1}},
+  '帮':{concepts:['援助','善意','合作'],emo:{gratitude:4,warmth:3}},
+  '喊':{concepts:['紧急','求助','恐慌'],emo:{fear:4,urgency:5}},
+  '叫':{concepts:['呼唤','吸引','警告'],emo:{urgency:3,curiosity:2}},
+  '逃':{concepts:['逃避','恐惧','危险'],emo:{fear:6,urgency:5}},
+  '跑':{concepts:['紧急','逃避','移动'],emo:{urgency:3,fear:2}},
+  '救':{concepts:['援助','紧急','英雄'],emo:{urgency:6,gratitude:4}},
+  '问':{concepts:['好奇','求知','社交'],emo:{curiosity:3}},
+  '打听':{concepts:['好奇','探听','社交'],emo:{curiosity:4,caution:1}},
+  // ═══ 认知/判断 ═══
+  '秘密':{concepts:['隐蔽','未知','禁忌'],emo:{curiosity:4,fear:1}},
+  '隐私':{concepts:['隐蔽','界限','保护'],emo:{caution:2,respect:1}},
+  '真的':{concepts:['确认','真实','重要'],emo:{curiosity:3,trust:2}},
+  '假的':{concepts:['欺骗','虚假','怀疑'],emo:{anger:3,sadness:2}},
+  '厉害':{concepts:['能力','尊敬','威胁'],emo:{respect:4,fear:1}},
+  '强':{concepts:['能力','优势','威胁'],emo:{respect:3,fear:1}},
+  '弱':{concepts:['脆弱','劣势','保护'],emo:{sympathy:3,protect:2}},
+  '无聊':{concepts:['乏味','不满','社交'],emo:{annoyance:3,tired:2}},
+  '没意思':{concepts:['乏味','不满','缺乏'],emo:{annoyance:3,sadness:1}},
+  '美':{concepts:['审美','正面','欣赏'],emo:{happiness:3,desire:2}},
+  '丑':{concepts:['审美','负面','排斥'],emo:{annoyance:2,disgust:4}},
+  '漂亮':{concepts:['审美','正面','欣赏'],emo:{happiness:4,desire:3}},
+  '难看':{concepts:['审美','负面','排斥'],emo:{annoyance:3,disgust:4}},
+  '老':{concepts:['年龄','经验','尊重'],emo:{respect:2,sympathy:1}},
+  '年轻':{concepts:['年龄','活力','脆弱'],emo:{energy:2,protect:1}},
+  '大':{concepts:['规模','重要','威胁'],emo:{respect:2,fear:1}},
+  '小':{concepts:['规模','轻微','可忽略'],emo:{calm:1}},
+  // '好'已移除——作为语气词/程度副词太常见，会污染关键词匹配
+  '坏':{concepts:['负面','否定','威胁'],emo:{anger:3,fear:2}},
+  '不错':{concepts:['正面','认可','满意'],emo:{happiness:3,warmth:2}},
+  '死了':{concepts:['极端','强烈','夸张'],emo:{urgency:2}},
+  '对':{concepts:['正确','认可','正面'],emo:{trust:3,calm:1}},
+  '错':{concepts:['错误','否定','负面'],emo:{anger:3,regret:2}},
+  // ═══ 社交/关系 ═══
+  '家':{concepts:['归属','安全','温暖'],emo:{warmth:5,calm:3}},
+  '回家':{concepts:['归属','安全','温暖'],emo:{warmth:5,calm:3}},
+  '房子':{concepts:['归属','财产','安全'],emo:{calm:3,desire:1}},
+  '道歉':{concepts:['歉意','和解','善意'],emo:{gratitude:3,calm:2}},
+  '对不起':{concepts:['歉意','和解','善意'],emo:{gratitude:3,sympathy:2}},
+  '抱歉':{concepts:['歉意','和解','善意'],emo:{gratitude:3,calm:2}},
+  '闲聊':{concepts:['社交','轻松','日常'],emo:{relax:3,warmth:2}},
+  // ═══ 食物 ═══
+  '食物':{concepts:['生存','满足','日常'],emo:{desire:2,calm:1}},
+  '吃饭':{concepts:['生存','满足','日常'],emo:{desire:2,warmth:1}},
+  // ═══ 环境/自然 ═══
+  '火':{concepts:['危险','紧急','灾难','破坏'],emo:{fear:7,urgency:6}},
+  '大火':{concepts:['危险','紧急','灾难','破坏','恐惧'],emo:{fear:9,urgency:8}},
+  '着火':{concepts:['危险','紧急','灾难','破坏'],emo:{fear:8,urgency:7}},
+  '烧':{concepts:['破坏','危险','灾难'],emo:{fear:6,urgency:5}},
+  '烟':{concepts:['危险','破坏','黑暗'],emo:{fear:4,urgency:3}},
+  '灾':{concepts:['紧急','危险','损失','破坏'],emo:{fear:8,urgency:7}},
+  '灾难':{concepts:['紧急','危险','损失','破坏','恐惧'],emo:{fear:9,urgency:8}},
+  '地震':{concepts:['灾难','紧急','恐惧','破坏'],emo:{fear:9,urgency:9}},
+  '洪水':{concepts:['灾难','紧急','破坏','失去'],emo:{fear:8,urgency:7}},
+  '天气':{concepts:['环境','变化','日常'],emo:{calm:1,curiosity:1}},
+  '下雨':{concepts:['阴冷','不便','潮湿'],emo:{sadness:2,calm:1}},
+  '暴雨':{concepts:['危险','紧急','自然'],emo:{fear:5,urgency:5}},
+  '晴天':{concepts:['美好','舒适','正面'],emo:{happiness:3,calm:2}},
+  '阴天':{concepts:['沉闷','压抑','负面'],emo:{sadness:2,calm:1}},
+  '天黑':{concepts:['黑暗','危险','未知'],emo:{fear:3,caution:2}},
+  '深夜':{concepts:['黑暗','寂静','危险'],emo:{fear:3,calm:1}},
+  '清晨':{concepts:['新生','开始','希望'],emo:{hope:3,energy:2}},
+  '傍晚':{concepts:['结束','归家','宁静'],emo:{calm:3,tired:1}},
+  '雾':{concepts:['模糊','未知','神秘'],emo:{fear:2,curiosity:3}},
+  '风':{concepts:['变化','不安','流动'],emo:{anxiety:2,restlessness:2}},
+  '冷':{concepts:['不适','需要','环境'],emo:{sympathy:1,discomfort:2}},
+  '热':{concepts:['不适','环境','烦躁'],emo:{discomfort:2,annoyance:1}},
+  // ═══ 地点 ═══
+  '村口':{concepts:['入口','公共','聚集'],emo:{curiosity:2}},
+  '井边':{concepts:['水源','日常','聚集'],emo:{calm:2}},
+  '茶馆':{concepts:['社交','消息','休闲'],emo:{relax:3,curiosity:2}},
+  '祠堂':{concepts:['庄严','传统','权威'],emo:{respect:4,solemn:2}},
+  '小巷':{concepts:['狭窄','隐蔽','秘密'],emo:{fear:1,curiosity:2}},
+  '石桥':{concepts:['通道','连接','地标'],emo:{calm:1}},
+  '田里':{concepts:['劳作','自然','日常'],emo:{calm:2,tired:1}},
+  '远山':{concepts:['远处','自然','危险'],emo:{fear:2,curiosity:2}},
+  '山':{concepts:['远处','自然','屏障'],emo:{fear:1,respect:1}},
+  '怪':{concepts:['异常','可疑','未知'],emo:{fear:3,curiosity:5}},
+  // ═══ 时间 ═══
+  '今天':{concepts:['现在','日常','关注'],emo:{calm:1}},
+  '昨天':{concepts:['过去','回忆','日常'],emo:{calm:1,sadness:1}},
+  '明天':{concepts:['未来','期待','计划'],emo:{hope:2,anxiety:1}},
+  '以后':{concepts:['未来','期待','计划'],emo:{hope:2,anxiety:1}},
+  '以前':{concepts:['过去','回忆','经验'],emo:{calm:1,sadness:1}}
+};
+
+// 性格概念权重：不同性格对同一概念的理解侧重不同（来自灵魂工坊 v4）
+var PERSONALITY_LENS={
+  正义:{'不公':2.5,'犯罪':2,'暴力':1.8,'伤害':1.5,'援助':1.5,'冲突':1.2,'破坏':1.5,'灾难':1.3,'损失':1.3,'欺骗':1.5,'背叛':1.5,'不公平':2,'对抗':1.3,'反抗':1.8},
+  善良:{'痛苦':2.5,'脆弱':2,'伤害':2,'援助':2,'悲伤':1.8,'失去':1.5,'恐惧':1.2,'疾病':1.8,'紧急':1.5,'孤独':2,'后悔':1.5,'遗憾':1.5,'关心':1.8,'担忧':1.5},
+  贪婪:{'财富':3,'资源':2,'交易':1.8,'损失':1.5,'机会':1.5,'灾难':-1,'珍贵':2,'价值':2,'贵重':2,'稀缺':2.5},
+  暴躁:{'冲突':2.5,'不公':2,'暴力':2,'威胁':1.5,'不满':1.5,'破坏':1.3,'紧急':-0.5,'欺骗':1.5,'仇恨':1.8,'对抗':2,'烦躁':1.8,'反感':1.5},
+  好奇:{'未知':3,'神秘':2.5,'秘密':2,'异常':2,'消息':1.5,'搜寻':1.5,'灾难':1,'恐惧':-.5,'变化':1.5,'怀疑':1.8,'未来':1.3,'过去':1,'探索':2},
+  勇敢:{'威胁':1.5,'危险':1.5,'暴力':1.3,'恐惧':-1,'攻击':1.2,'灾难':1,'英雄':1.5,'紧急':1,'对抗':1.5,'反抗':1.5,'保护':1.3},
+  沉默:{'冲突':-1.5,'社交':-1,'威胁':-1,'对外':-1,'恐惧':-1,'表达':-1.5,'关心':-1,'分享':-1.5},
+  社交:{'聚集':1.8,'社交':1.8,'消息':1.5,'合作':1.3,'友善':1.2,'灾难':1.2,'关心':1.5,'对立':-1,'和解':1.8,'礼貌':1.5,'客气':1.3},
+  勤劳:{'劳作':1.8,'日常':1.2,'援助':1.3,'合作':1.2,'紧急':1.5,'需求':1.3,'计划':1.2},
+  懒惰:{'劳作':-1.5,'搜索':-1,'援助':-1,'合作':-0.8,'紧急':-1.5,'需求':-1,'计划':-1.2,'体力':-1.3}
+};
+
+// 语义理解管线：提取关键词→激活概念→性格加权→形成理解（来自灵魂工坊 v4）
+function understandEvent(msg,npc){
+  var text=msg;var p=npc.personality;
+  // 1. 提取关键词
+  var keywords=[];
+  for(var word in SEMANTIC_MAP){if(text.indexOf(word)>=0)keywords.push(word);}
+  // 关键词去重：如果短词被长词完全包含，过滤短词（如"死"被"死了"包含）
+  var filteredKeywords=[];
+  for(var i=0;i<keywords.length;i++){
+    var isSubstring=false;
+    for(var j=0;j<keywords.length;j++){
+      if(i!==j&&keywords[j].length>keywords[i].length&&keywords[j].indexOf(keywords[i])>=0){
+        isSubstring=true;break;
+      }
+    }
+    if(!isSubstring)filteredKeywords.push(keywords[i]);
+  }
+  keywords=filteredKeywords;
+  // 字符级回退：当关键词匹配失败时，用单字特征推断语义
+  if(keywords.length===0){
+    var charDanger={火:1,灾:1,死:1,血:1,杀:1,毒:1,炸:1,爆:1,毁:1,灭:1,亡:1,逃:1,跑:1,喊:1,叫:1,救:1,病:1,伤:1,痛:1,鬼:1,妖:1,怪:1,贼:1,盗:1,偷:1,抢:1,打:1,斗:1,战:1,狼:1,虎:1,蛇:1,兽:1,崩:1,塌:1,裂:1,断:1};
+    var charUrgency={火:1,灾:1,救:1,逃:1,跑:1,喊:1,叫:1,急:1,快:1,危:1,险:1,死:1,杀:1,血:1};
+    var charSad={死:1,亡:1,哭:1,泪:1,伤:1,痛:1,病:1,失:1,丢:1,丧:1,葬:1,灭:1,毁:1,别:1,离:1,悲:1,哀:1,愁:1,惨:1,孤:1,寂:1};
+    var charCuriosity={怪:1,秘:1,密:1,疑:1,奇:1,新:1,外:1,远:1,暗:1,隐:1,藏:1};
+    var charMoney={银:1,金:1,钱:1,财:1,宝:1,富:1,贵:1,铜:1,两:1,贯:1,钞:1,币:1,贝:1};
+    var charAnger={怒:1,恨:1,怨:1,愤:1,恼:1,烦:1,厌:1,恶:1,憎:1,仇:1,气:1,骂:1,咒:1};
+    var charHappy={喜:1,乐:1,欢:1,笑:1,福:1,幸:1,爱:1,暖:1,甜:1,美:1};
+    var dangerScore=0,urgencyScore=0,sadScore=0,curiosityScore=0,moneyScore=0,angerScore=0,happyScore=0;
+    for(var i=0;i<text.length;i++){var ch=text[i];
+      if(charDanger[ch])dangerScore+=charDanger[ch];
+      if(charUrgency[ch])urgencyScore+=charUrgency[ch];
+      if(charSad[ch])sadScore+=charSad[ch];
+      if(charCuriosity[ch])curiosityScore+=charCuriosity[ch];
+      if(charMoney[ch])moneyScore+=charMoney[ch];
+      if(charAnger[ch])angerScore+=charAnger[ch];
+      if(charHappy[ch])happyScore+=charHappy[ch];
+    }
+    var fallbackConcepts=[];
+    if(dangerScore>0)fallbackConcepts.push('危险');
+    if(urgencyScore>0)fallbackConcepts.push('紧急');
+    if(sadScore>0)fallbackConcepts.push('悲伤');
+    if(curiosityScore>0)fallbackConcepts.push('未知');
+    if(moneyScore>0)fallbackConcepts.push('财富');
+    if(angerScore>0)fallbackConcepts.push('冲突');
+    if(happyScore>0)fallbackConcepts.push('快乐');
+    if(fallbackConcepts.length===0)fallbackConcepts.push('日常');
+    // 性格透镜加权
+    var conceptAct={};
+    fallbackConcepts.forEach(function(c){conceptAct[c]=(conceptAct[c]||0)+1;});
+    for(var trait in PERSONALITY_LENS){
+      var weight=p[trait]/100;
+      var lens=PERSONALITY_LENS[trait];
+      for(var concept in lens){
+        if(conceptAct[concept]!==undefined){conceptAct[concept]+=lens[concept]*weight;}
+      }
+    }
+    var topConcepts=Object.keys(conceptAct).filter(function(c){return conceptAct[c]>0;}).sort(function(a,b){return conceptAct[b]-conceptAct[a];}).slice(0,4);
+    return {keywords:keywords,concepts:topConcepts,dominantEmotion:'',emotionAct:{},interpretation:topConcepts.join('，'),subject:extractSubject(text),fallback:true};
+  }
+  // 2. 激活概念+情绪
+  var conceptAct={};var emotionAct={};
+  keywords.forEach(function(kw){
+    var sem=SEMANTIC_MAP[kw];if(!sem)return;
+    sem.concepts.forEach(function(c){conceptAct[c]=(conceptAct[c]||0)+1;});
+    for(var e in sem.emo){emotionAct[e]=(emotionAct[e]||0)+sem.emo[e];}
+  });
+  // 3. 性格透镜加权
+  for(var trait in PERSONALITY_LENS){
+    var weight=p[trait]/100;
+    var lens=PERSONALITY_LENS[trait];
+    for(var concept in lens){
+      if(conceptAct[concept]!==undefined){conceptAct[concept]+=lens[concept]*weight;}
+    }
+  }
+  // 4. 排序取Top概念
+  var topConcepts=Object.keys(conceptAct).filter(function(c){return conceptAct[c]>0;}).sort(function(a,b){return conceptAct[b]-conceptAct[a];}).slice(0,4);
+  // 5. 主导情绪
+  var dominantEmotion='';var maxEmo=0;
+  for(var e in emotionAct){if(emotionAct[e]>maxEmo){maxEmo=emotionAct[e];dominantEmotion=e;}}
+  // 6. 生成理解表述
+  var conceptMap={暴力:'有暴力发生',伤害:'有人受伤了',痛苦:'有人很痛苦',危险:'有危险',未知:'情况不明',冲突:'起了冲突',不公:'这不公平',犯罪:'有人在作恶',财富:'跟钱有关',援助:'需要帮忙',悲伤:'很悲伤',恐惧:'让人害怕',损失:'有损失',社交:'跟人打交道',消息:'有新消息',搜寻:'在找什么',异常:'不太对劲',威胁:'有威胁',机会:'可能有好处',外来者:'有外人来了',脆弱:'有人很脆弱',合作:'需要合作',交易:'有交易',黑暗:'环境危险',聚集:'人多的地方',日常:'日常小事',神秘:'很神秘',紧急:'事情紧急',秘密:'有秘密',权威:'涉及权威',资源:'涉及资源',失去:'有所失去',不变:'很平常',灾难:'重大灾难',破坏:'破坏性事件',疾病:'有人生病了',野兽:'有野兽出没',英雄:'需要英雄站出来',终结:'已经结束了',仪式:'有仪式',逃避:'有人在逃避',安全:'安全第一',希望:'有希望',冒险:'有风险',自由:'自由了',分离:'分开了',归属:'归属感',远处:'远处发生了事',自然:'自然的力量',屏障:'有屏障',快乐:'值得高兴的事',欺骗:'有人在说谎',背叛:'被背叛了',不诚实:'有人在说谎',好感:'有感情',亲近:'关系亲近',厌恶:'令人反感',排斥:'被排斥',恨意:'带着恨意',仇恨:'带着仇恨',遗憾:'很遗憾',后悔:'很后悔',孤独:'很孤独',孤立:'被孤立',期待:'有所期待',渴望:'很渴望',正面:'是好事',负面:'不是好事',正确:'做得对',错误:'犯了错',认可:'被认可',善意:'带着善意',歉意:'在道歉',乏味:'很无聊',审美:'关乎外表',年龄:'关于年纪',经验:'有经验',活力:'有活力',赞美:'在赞美',否定:'在否定',关心:'在关心',担忧:'在担忧',烦躁:'很烦躁',不适:'不舒服',环境:'环境问题',变化:'情况有变',开始:'新的开始',结束:'告一段落',未来:'关于未来',过去:'关于过去',现在:'关于现在',珍贵:'很珍贵',稀有:'很稀有',生存:'事关生存',满足:'感到满足',需求:'有需求',体力:'体力不支',睡眠:'需要休息',警觉:'提起警觉',小心:'需要小心',确认:'在确认',真实:'是真实的',虚假:'是假的',怀疑:'令人怀疑',能力:'关于能力',优势:'有优势',劣势:'处于劣势',保护:'需要保护',愿意:'表示愿意',拒绝:'表示拒绝',贪婪:'有贪念',欲望:'有欲望',计划:'在计划',回忆:'在回忆',价值:'有价值',贵重:'很贵重',稀缺:'很稀缺',权利:'涉及权利',公平:'需要公平',不公平:'不公平',对抗:'在对抗',对立:'立场对立',反抗:'在反抗',施舍:'在施舍',客气:'在客气',客气:'在客气',礼貌:'表示礼貌',回报:'期待回报',奉献:'愿意奉献',选择:'做出选择',界限:'有界限',禁忌:'有禁忌',和解:'在和解',不安:'感到不安',压抑:'感到压抑',无力:'感到无力',失落:'感到失落',不满:'感到不满',反感:'感到反感'};
+  var interpretation=topConcepts.length>0?topConcepts.map(function(c){return conceptMap[c]||c;}).join('，'):'发生了什么事';
+  return {keywords:keywords,concepts:topConcepts,dominantEmotion:dominantEmotion,emotionAct:emotionAct,interpretation:interpretation,subject:extractSubject(text,keywords)};
+}
+function extractSubject(text,keywords){
+  // 优先用匹配到的关键词做主语
+  if(keywords&&keywords.length>0){
+    // 内容词优先：事物/事件/情绪 > 价值判断词
+    var valueWords={好:1,坏:1,对:1,错:1,不错:1,美:1,丑:1,大:1,小:1,强:1,弱:1,老:1,年轻:1,真:1,假:1,死了:1};
+    var contentWords=[],judgeWords=[];
+    for(var i=0;i<keywords.length;i++){
+      if(valueWords[keywords[i]])judgeWords.push(keywords[i]);
+      else contentWords.push(keywords[i]);
+    }
+    // 先选内容词中最长的，没有再选判断词
+    var candidates=contentWords.length>0?contentWords:judgeWords;
+    var best=candidates[0];
+    for(var i=1;i<candidates.length;i++){if(candidates[i].length>best.length)best=candidates[i];}
+    return best;
+  }
+  // 回退：正则提取
+  var words=text.replace(/[，。！？、\s\[\]]/g,'');
+  var m=words.match(/(.{2,6})(?:在|来|去|到|走|跑|坐|站|躺|看|说|喊|哭|笑|打|偷|吵|找|丢|拿|感觉|觉得|认为)/);
+  return m?m[1]:'这件事';
+}
+
+// ═══════════════ 句子结构分析（理解谁对谁做了什么、说话人意图） ═══════════════
+// 不再只看关键词，而是分析整句的主谓宾关系和意图类型
+function analyzeSentence(msg){
+  // 意图1：指控 —— "你偷/抢/骗/打/骂/伤了(我的)X"
+  var accMatch=msg.match(/你(偷|抢|骗|拿|打|骂|伤|害|杀|砸|烧|毁|弄|搞|动|碰)(?:了|过)?(?:我(?:的)?)?(.{1,6})?/);
+  if(accMatch)return {intent:'accusation',actor:'你',target:'我',action:accMatch[1],object:accMatch[2]||'',desc:'指控你'+accMatch[1]+'了'+(accMatch[2]||'我')};
+  // 意图1b：指责 —— "你撒谎/骗人/胡说"
+  var blameMatch=msg.match(/你(撒谎|骗人|胡说|瞎说|乱说|说谎|吹牛|吹嘘|装|假装|演戏|骗我|骗大家)/);
+  if(blameMatch)return {intent:'accusation',actor:'你',target:'我',action:blameMatch[1],object:'',desc:'指责你'+blameMatch[1]};
+  // 意图1c：讨厌/恨 —— "我讨厌你" / "我恨你"
+  var hateMatch=msg.match(/我(讨厌|恨|厌恶|烦|不喜欢|受够)(?:了)?(?:你|这个人)?/);
+  if(hateMatch)return {intent:'accusation',actor:'我',target:'你',action:hateMatch[1],object:'',desc:'对你表达'+hateMatch[1]};
+  // 意图2：外部事件 —— "外面X了" / "X了"
+  var extMatch=msg.match(/外面(着火|出事|打起来|吵起来|闹起来|下(?:雨|雪)|刮风|打雷|闪电)/);
+  if(extMatch)return {intent:'external_event',event:extMatch[1],location:'外面',desc:'外面发生了'+extMatch[1]};
+  // 意图2b：事件通报 —— "着火了" / "地震了"
+  var eventMatch=msg.match(/(着火|地震|洪水|发大水|塌了|倒了|炸了|死人|出事|打架|吵架|闹鬼)(?:了|啦)?/);
+  if(eventMatch)return {intent:'external_event',event:eventMatch[1],location:'',desc:'通报'+eventMatch[1]};
+  // 意图3：自我状态 —— "我很X" / "我好X"
+  var selfMatch=msg.match(/我(?:很|好|非常|特别|有点|有点儿|太|真的)?(难过|伤心|害怕|开心|高兴|生气|愤怒|紧张|后悔|失望|孤独|寂寞|无聊|累|困|饿|渴|冷|热|疼|痛|不舒服|烦|郁闷|沮丧|激动|感动|幸福|满足|得意|骄傲|惭愧|内疚|担忧|担心|焦虑|烦躁)(?:死了|极了|得很|得不行|得要命|得受不了)?(?:了|啦)?/);
+  if(selfMatch)return {intent:'self_state',state:selfMatch[1],speaker:'我',desc:'表达自己'+selfMatch[1]};
+  // 意图3b：自我遭遇 —— "我受伤了" / "我生病了"
+  var selfActMatch=msg.match(/我(受伤|生病|发烧|感冒|摔倒|迷路|走丢|找不到|丢了|忘了|梦到|梦见|遇到|碰到|发现|看到|听见|闻到)(?:了|啦)?/);
+  if(selfActMatch)return {intent:'self_state',state:selfActMatch[1],speaker:'我',desc:'表达自己'+selfActMatch[1]};
+  // 意图4：给予/提议 —— "给你X" / "送你X"
+  var giveMatch=msg.match(/(?:给|送|分|分给|留给|递给)(?:你|大家|你们)(?:一[个些点张块把份]|一点|一些)?(.{1,8})/);
+  if(giveMatch)return {intent:'offer',item:giveMatch[1],recipient:'你',desc:'要给你'+giveMatch[1]};
+  // 意图4b：一起做 —— "一起X吧"
+  var togetherMatch=msg.match(/一起(.{1,6})(?:吧|啊|呗|呀|啦)?/);
+  if(togetherMatch)return {intent:'offer',item:togetherMatch[1],recipient:'一起',desc:'提议一起'+togetherMatch[1]};
+  // 意图5：提问 —— "你X吗？" / "X呢？"
+  var askMatch=msg.match(/(?:你|你们)?(.{1,10})(?:吗|呢|吧|了没|了没有|没有|不|是不是|能不能|行不行|可不可以|怎么样|如何|咋样|咋办|怎么办|什么意思|怎么看)(?:[？?]?)?/);
+  if(askMatch&&(msg.indexOf('吗')>=0||msg.indexOf('呢')>=0||msg.indexOf('？')>=0||msg.indexOf('?')>=0))return {intent:'question',topic:askMatch[1],desc:'在问关于'+askMatch[1]};
+  // 意图6：感谢/道歉
+  if(msg.indexOf('谢谢')>=0||msg.indexOf('感谢')>=0)return {intent:'gratitude',desc:'在感谢你'};
+  if(msg.indexOf('对不起')>=0||msg.indexOf('抱歉')>=0||msg.indexOf('不好意思')>=0)return {intent:'apology',desc:'在道歉'};
+  // 意图7：评价 —— "你很X" / "你真X"
+  var praiseMatch=msg.match(/你(?:很|真|好|太|非常|特别|挺|蛮|够|确实|真的)(.{1,4})/);
+  if(praiseMatch)return {intent:'judgment',judgment:praiseMatch[1],target:'你',desc:'评价你'+praiseMatch[1]};
+  // 意图8：请求 —— "帮我X" / "能不能X"
+  var reqMatch=msg.match(/(?:帮|帮帮|请|求|求求|麻烦)(?:我|一下|你)?(?:帮)?(.{1,8})/);
+  if(reqMatch)return {intent:'request',action:reqMatch[1],desc:'请求你'+reqMatch[1]};
+  return {intent:'unknown',desc:'说了些什么'};
+}
+
+// 增强版语义理解：关键词+句子结构+意图
+function understandEventFull(msg,npc){
+  var base=understandEvent(msg,npc);
+  var structure=analyzeSentence(msg);
+  base.structure=structure;
+  // 句子结构修正概念
+  if(structure.intent!=='unknown'){
+    if(structure.intent==='accusation'){
+      if(base.concepts.indexOf('冲突')<0)base.concepts.unshift('冲突');
+      if(base.concepts.indexOf('不公')<0)base.concepts.unshift('不公');
+    }else if(structure.intent==='self_state'){
+      if(base.concepts.indexOf('脆弱')<0)base.concepts.unshift('脆弱');
+    }else if(structure.intent==='external_event'){
+      if(base.concepts.indexOf('紧急')<0)base.concepts.unshift('紧急');
+    }
+    base.interpretation=structure.desc+'，'+base.interpretation;
+  }
+  return base;
+}
+
+// ═══════════════ 心口不一系统（来自灵魂工坊 v4） ═══════════════
+var DIVERGENCE_TYPES={
+  whiteLie:{name:"善意谎言",icon:"🤍",color:"#4ADE80",desc:"善良NPC安慰人时，内心其实也担心"},
+  greedyMask:{name:"心口不一",icon:"💰",color:"#F0B958",desc:"贪婪NPC表面客气，内心在算计"},
+  hiddenFear:{name:"隐藏恐惧",icon:"😰",color:"#F87171",desc:"勇敢NPC表面不怕，内心其实也怕"},
+  silentStorm:{name:"沉默风暴",icon:"🌪",color:"#60A5FA",desc:"沉默NPC外表一言不发，内心波澜壮阔"},
+  socialMask:{name:"社交伪装",icon:"🎭",color:"#C084FC",desc:"高社交NPC在冲突中说场面话"}
+};
+
+// 真实内心独白库：5种类型×4种风格（silent/talkative/gentle/normal）
+var INNER_THOUGHTS={
+  whiteLie:{
+    silent:['（什么都没说，但心里在想：其实我也不确定）','（表面沉默，心里在叹气：这事没那么简单）','（嘴上不说，心里已经在想最坏的情况了）'],
+    talkative:['（说了一堆安慰的话，但心里想：说实话我也不太信）','（嘴上乐观，心里嘀咕：这能行吗？）','（安慰别人的话一套一套的，自己心里也没底）'],
+    gentle:['（温柔地安慰着对方，心里也在打鼓：会不会更糟？）','（话说得很暖，但心里偷偷叹了口气）','（表面镇定地安抚着，心里其实慌得一批）'],
+    normal:['（说了几句安慰的话，但心里没抱太大希望）','（嘴上说没事，心里想：但愿如此吧）','（安慰是安慰了，但自己也不太信）']
+  },
+  greedyMask:{
+    silent:['（什么都没说，心里已经在估价了）','（表面不动声色，心里盘算着能捞多少）','（沉默着，眼珠却在转）'],
+    talkative:['（嘴上客气得很，心里想：嘿嘿，赚到了）','（话说得漂亮，心里在打算盘：这买卖划算）','（嘴上推辞，心里已经算好了：白给的不要白不要）'],
+    gentle:['（表面推辞得很优雅，心里已经在盘算怎么用了）','（话说得委婉，心里想着：这要是我的就好了）','（温柔地拒绝着，心里却在喊：快给我！）'],
+    normal:['（嘴上这么说，心里想的是另一回事）','（话说得客气，但心里已经在盘算价值了）','（嘴上客气，心里打着小算盘）']
+  },
+  hiddenFear:{
+    silent:['（沉默之下，手心全是汗）','（不说话，但心跳得咚咚响）','（表面冷静，但腿在发抖）'],
+    talkative:['（嘴上说不怕，其实腿在发软）','（话说得响亮，但心里在打鼓：可别真出事）','（越是大声，其实心里越没底）'],
+    gentle:['（表面上镇定，但心里慌得不行）','（温柔地安慰别人，自己却也在害怕）','（轻声细语，但手在微微发抖）'],
+    normal:['（说得轻松，其实心里也紧张）','（表面上没什么，心里也在打鼓）','（话说得平，但心里波涛汹涌）']
+  },
+  silentStorm:{
+    silent:['（什么也没说，但心里翻江倒海）','（沉默着，但脑子里已经转了一百圈）','（表面波澜不惊，内心已经炸了）','（不说话，但心里已经骂了一百句）'],
+    talkative:['（说了一堆，但最想说的那句咽回去了）','（话多是为了掩盖真正想说的）','（说了很多，却没有一句是真心话）'],
+    gentle:['（轻轻说了几句，但心里憋了很多话）','（温柔是表象，心里有千言万语）','（轻声细语，但心里在咆哮）'],
+    normal:['（说了几句，但真正想说的咽回去了）','（话到嘴边，又咽了回去）','（表面平静，心里在翻白眼）']
+  },
+  socialMask:{
+    silent:['（不想说话，但知道这时候不该沉默）','（沉默是因为不知道该说什么，但心里门清）','（不说话，但心里已经在分析每个人的立场了）'],
+    talkative:['（说了一大堆，其实一句真心的都没有）','（话多是在掩饰心里的不安）','（场面话说得漂亮，心里在冷笑）'],
+    gentle:['（温柔是习惯，不是真心）','（轻声细语，但心里在骂人）','（表面温和，心里想：一群傻子）'],
+    normal:['（场面话说得漂亮，心里想的完全相反）','（嘴上这么说，心里在翻白眼）','（客套话说得滴水不漏，心里毫无波澜）']
+  }
+};
+
+// 心口不一判断（来自灵魂工坊 v4）
+function shouldDiverge(npc,understanding,manualMood){
+  var p=npc.personality;var reasons=[];
+  var structure=understanding.structure;
+  var isAccusation=structure&&structure.intent==='accusation';
+  var isSelfState=structure&&structure.intent==='self_state';
+  var isExternalEvent=structure&&structure.intent==='external_event';
+  // 善意的谎言：善良>70 + 对方情绪低落/悲伤
+  if(p.善良>70&&(manualMood==="sad"||manualMood==="fear")){
+    reasons.push({type:'whiteLie',weight:3.5});
+  }
+  if(p.善良>65&&understanding&&understanding.concepts){
+    if(understanding.concepts.indexOf('悲伤')>=0||understanding.concepts.indexOf('痛苦')>=0){
+      reasons.push({type:'whiteLie',weight:2.5});
+    }
+  }
+  // 自我状态→善意谎言（善良NPC安慰时可能心口不一）
+  if(isSelfState&&p.善良>65){reasons.push({type:'whiteLie',weight:2});}
+  // 心口不一：贪婪>55 + 涉及利益
+  if(p.贪婪>55&&understanding&&understanding.concepts&&(understanding.concepts.indexOf('财富')>=0||understanding.concepts.indexOf('交易')>=0||understanding.concepts.indexOf('资源')>=0)){
+    reasons.push({type:'greedyMask',weight:3});
+  }else if(p.贪婪>55){reasons.push({type:'greedyMask',weight:2});}
+  // 隐藏恐惧：勇敢>60 + 理解到危险/威胁
+  if(p.勇敢>60&&understanding&&understanding.concepts){
+    if(understanding.concepts.indexOf('危险')>=0||understanding.concepts.indexOf('威胁')>=0||understanding.concepts.indexOf('恐惧')>=0){
+      reasons.push({type:'hiddenFear',weight:3});
+    }
+  }
+  // 外部事件→隐藏恐惧（勇敢NPC面对突发事件时内心也怕）
+  if(isExternalEvent&&p.勇敢>55){reasons.push({type:'hiddenFear',weight:2.5});}
+  // 沉默风暴：沉默>55
+  if(p.沉默>55){reasons.push({type:'silentStorm',weight:2.5});}
+  // 指控→沉默风暴加成（被指控时沉默型内心翻江倒海）
+  if(isAccusation&&p.沉默>50){reasons.push({type:'silentStorm',weight:3});}
+  // 社交伪装：社交>65 + 冲突场景或公开场合
+  if(p.社交>65&&understanding&&understanding.concepts&&(understanding.concepts.indexOf('冲突')>=0||understanding.concepts.indexOf('不和')>=0)){
+    reasons.push({type:'socialMask',weight:2.5});
+  }
+  if(p.社交>70&&(manualMood==="public")){reasons.push({type:'socialMask',weight:2});}
+  // 指控→社交伪装加成（被公开指控时高社交NPC表面客气内心翻白眼）
+  if(isAccusation&&p.社交>60){reasons.push({type:'socialMask',weight:2.8});}
+  if(reasons.length===0)return null;
+  reasons.sort(function(a,b){return b.weight-a.weight;});
+  var probability=.30+(reasons[0].weight*.12);
+  if(Math.random()<probability)return {type:reasons[0].type,reason:reasons[0]};
+  return null;
+}
+
+// 生成内心真实想法（来自灵魂工坊 v4）
+function genInnerThought(npc,divergenceType){
+  var style=npc.speechStyle||'normal';
+  var pool=INNER_THOUGHTS[divergenceType];
+  if(!pool)return null;
+  var thoughts=pool[style]||pool.normal||[];
+  if(thoughts.length===0)return null;
+  return thoughts[Math.floor(Math.random()*thoughts.length)];
+}
+
+// ═══════════════ 观点形成系统（来自灵魂工坊 v4） ═══════════════
+// 每个NPC对同一句话形成自己的"看法"——基于理解（概念+情绪）生成语境化观点
+function formOpinion(npc,msg,understanding){
+  var p=npc.personality;var subject=understanding.subject||'这件事';
+  var concepts=understanding.concepts||[];
+  var domEmo=understanding.dominantEmotion||'';
+  var interpretations=[];
+  // 基于理解的主题生成观点，而非机械套性格模板
+  // 正面情绪（感激/快乐/温暖/希望）→ 积极回应
+  if(domEmo==='gratitude'||domEmo==='happiness'||domEmo==='warmth'||domEmo==='hope'){
+    if(p.善良>60)interpretations.push({text:subject+'……你真好，我很高兴',stance:'warm'});
+    if(p.社交>60)interpretations.push({text:'哈哈，'+subject+'？这有什么好谢的！',stance:'friendly'});
+    if(p.沉默>60)interpretations.push({text:'……（嘴角微扬）'+subject+'……',stance:'quiet_pleased'});
+    interpretations.push({text:subject+'……谢谢你这么说',stance:'grateful'});
+  }
+  // 负面情绪（悲伤/恐惧/遗憾/孤独）→ 共情或回避
+  else if(domEmo==='sadness'||domEmo==='sympathy'||domEmo==='regret'||domEmo==='fear'){
+    if(p.善良>70)interpretations.push({text:subject+'挺可怜的，需要帮助',stance:'compassionate'});
+    if(p.正义>70)interpretations.push({text:'这不公平，得有人管',stance:'righteous'});
+    if(p.勇敢>60)interpretations.push({text:subject+'？没什么好怕的',stance:'brave'});
+    if(p.沉默>60)interpretations.push({text:'……（默默听着）'+subject+'……',stance:'observant'});
+    if(p.好奇>60)interpretations.push({text:subject+'？怎么回事？得问清楚',stance:'curious'});
+    interpretations.push({text:subject+'……先看看再说',stance:'neutral'});
+  }
+  // 愤怒/冲突 → 对抗或回避
+  else if(domEmo==='anger'||domEmo==='annoyance'||domEmo==='hatred'){
+    if(p.暴躁>60)interpretations.push({text:'烦死了，'+subject+'？又来事',stance:'irritated'});
+    if(p.正义>70)interpretations.push({text:subject+'？谁干的？这不公平',stance:'righteous'});
+    if(p.沉默>60)interpretations.push({text:'……（压下怒火）'+subject+'……',stance:'suppressed'});
+    if(p.社交>60)interpretations.push({text:subject+'？别激动，有话好好说',stance:'conciliatory'});
+    interpretations.push({text:subject+'……先冷静',stance:'neutral'});
+  }
+  // 贪婪/欲望 → 算计
+  else if(domEmo==='greed'||domEmo==='desire'){
+    if(p.贪婪>55)interpretations.push({text:subject+'？说不定有利可图',stance:'opportunistic'});
+    if(p.善良>60)interpretations.push({text:subject+'……这不太好吧',stance:'hesitant'});
+    interpretations.push({text:subject+'？真的假的？',stance:'skeptical'});
+  }
+  // 好奇 → 追问
+  else if(domEmo==='curiosity'){
+    if(p.好奇>60)interpretations.push({text:subject+'？有意思，得搞清楚',stance:'curious'});
+    if(p.沉默>60)interpretations.push({text:'……（竖起耳朵）'+subject+'？',stance:'silent_curious'});
+    interpretations.push({text:subject+'？说来听听',stance:'interested'});
+  }
+  // 默认：基于性格的通用观点
+  if(interpretations.length===0){
+    if(p.好奇>70)interpretations.push({text:subject+'？有意思，得搞清楚',stance:'curious'});
+    if(p.善良>70)interpretations.push({text:subject+'……需要帮忙吗？',stance:'compassionate'});
+    if(p.正义>70)interpretations.push({text:'嗯，'+subject+'……得有个说法',stance:'righteous'});
+    if(p.沉默>70)interpretations.push({text:'……（默默观察）'+subject,stance:'observant'});
+    if(p.社交>70)interpretations.push({text:subject+'？哈哈，你说得对',stance:'friendly'});
+    if(p.懒惰>70)interpretations.push({text:'关我什么事，别找我',stance:'indifferent'});
+    if(p.暴躁>70)interpretations.push({text:'烦死了，又来事',stance:'irritated'});
+    if(p.贪婪>70)interpretations.push({text:'说不定有利可图',stance:'opportunistic'});
+    if(p.勇敢>70)interpretations.push({text:'没什么好怕的',stance:'brave'});
+    if(interpretations.length===0)interpretations.push({text:subject+'……先看看再说',stance:'neutral'});
+  }
+  var totalWeight=0;var weighted=[];
+  interpretations.forEach(function(ip,i){var w=i===0?3:1;totalWeight+=w;weighted.push({ip:ip,w:totalWeight});});
+  var roll=Math.random()*totalWeight;
+  var chosen=null;
+  for(var i=0;i<weighted.length;i++){if(roll<weighted[i].w){chosen=weighted[i].ip;break;}}
+  return chosen||interpretations[0];
+}
+
+// ═══════════════ 对话生成（基于NPC性格+语义理解+观点） ═══════════════
+// 核心设计：每条回复都体现NPC对用户话语的"理解"——不是机械注入关键词，而是基于理解做出情境化回应
+// {subject} 会被替换为用户消息中匹配到的关键词
+// 当没有匹配关键词时，使用 fallback 模板（不带{subject}的通用回应）
+var SURFACE_PATTERNS={
+  silent:{ // 沉默型：话少简短，用行动/眼神/语气传递理解
+    question: [
+      "……{subject}？为什么？",
+      "……（抬眼）{subject}？",
+      "……{subject}……说清楚。",
+      "……（沉默片刻）{subject}……什么意思？",
+      "……{subject}？你认真的？",
+      "……（盯着你）{subject}？"
+    ],
+    anger: [
+      "……{subject}。（沉下脸）",
+      "……（眼神变冷）{subject}……别提了。",
+      "……{subject}……够了。",
+      "……（握紧拳头）{subject}……",
+      "……{subject}……走开。",
+      "……（转身）{subject}……别说了。"
+    ],
+    fear: [
+      "……{subject}？在哪儿？",
+      "……{subject}。（握紧武器）",
+      "……{subject}……带我去。",
+      "……{subject}？严不严重？",
+      "……（环顾四周）{subject}？",
+      "……{subject}……别慌，我去。"
+    ],
+    sadness: [
+      "……{subject}。（低头）",
+      "……{subject}……会好的。",
+      "……（叹气）{subject}……",
+      "……{subject}……我懂。",
+      "……{subject}……嗯。",
+      "……（拍了拍你）{subject}……"
+    ],
+    offer: [
+      "……{subject}？为何？",
+      "……（盯着看）{subject}……",
+      "……{subject}……不用。",
+      "……{subject}……什么人？",
+      "……（摇头）{subject}……",
+      "……{subject}……拿走。"
+    ],
+    normal: [
+      "……{subject}。",
+      "……嗯。{subject}。",
+      "……（点头）{subject}。",
+      "……{subject}……知道了。",
+      "……{subject}……继续。",
+      "……（等你说完）{subject}。"
+    ],
+    accusation: [
+      "……（沉下脸）我没{action}过。",
+      "……（眼神变冷）你再说一遍。",
+      "……{action}？你怀疑我？",
+      "……（握紧拳头）不是我的。",
+      "……{action}你的{object}？呵。",
+      "……（转身）找错人了。"
+    ],
+    self_state: [
+      "……{state}了？（看着你）",
+      "……{state}……嗯。",
+      "……（沉默片刻）{state}？",
+      "……{state}……会好的。",
+      "……（点头）{state}……",
+      "……{state}……我懂。"
+    ],
+    external_event: [
+      "……{event}？在哪儿？",
+      "……{event}。（握紧武器）",
+      "……{event}……带我去。",
+      "……{event}？严不严重？",
+      "……（环顾四周）{event}？",
+      "……{event}……知道了。"
+    ],
+    gratitude: [
+      "……（点头）",
+      "……嗯。",
+      "……不客气。",
+      "……"
+    ],
+    apology: [
+      "……（看了你一眼）",
+      "……算了。",
+      "……嗯。",
+      "……没事。"
+    ],
+    judgment: [
+      "……（抬眼）是么。",
+      "……你这么觉得？",
+      "……（沉默）",
+      "……"
+    ],
+    request: [
+      "……什么事？",
+      "……（盯着你）说。",
+      "……帮你？",
+      "……（等你说）"
+    ],
+    fallback: [
+      "……嗯？",
+      "……（看着你）",
+      "……说。",
+      "……（等你说）"
+    ]
+  },
+  talkative:{ // 话痨型：热情外向，先重复关键词再情绪化发挥
+    question: [
+      "{subject}？哈哈，你问这个啊！",
+      "{subject}？让我想想……这事儿可不简单！",
+      "咦？{subject}？你怎么突然问这个？",
+      "{subject}？你算问对人了！我跟你说……",
+      "{subject}？有意思有意思！你怎么看？",
+      "{subject}？哈哈，这个说来话长！"
+    ],
+    anger: [
+      "{subject}？！喂喂喂，你说什么呢！",
+      "{subject}？别别别，有话好好说！",
+      "{subject}？你这话说的……我可不爱听！",
+      "{subject}？！你冷静一下冷静一下！",
+      "{subject}？你别激动，咱慢慢说！",
+      "{subject}？！哎哟，至于吗至于吗？"
+    ],
+    fear: [
+      "{subject}？！在哪儿在哪儿？严不严重？",
+      "哎呀{subject}？！别慌别慌，慢慢说！",
+      "{subject}？快说清楚！我跟你去看看！",
+      "{subject}？！天哪，这可不得了！",
+      "{subject}？真的假的？你别吓我！",
+      "{subject}？！走走走，带我去看看！"
+    ],
+    sadness: [
+      "{subject}……别难过别难过！来来来坐坐坐！",
+      "哎呀{subject}……想开点想开点！没什么大不了的！",
+      "{subject}？来来来，我陪你聊聊天散散心！",
+      "{subject}……嗨，人生嘛，起起落落很正常！",
+      "{subject}？别愁眉苦脸的了，笑一个！",
+      "{subject}……没事没事，天塌下来有高个儿顶着！"
+    ],
+    offer: [
+      "{subject}？！真的假的？这么好？",
+      "哎呀{subject}？这怎么好意思呢！",
+      "{subject}？太客气了太客气了！",
+      "{subject}？！你这也太够意思了！",
+      "{subject}？真的吗？你不是在逗我吧？",
+      "{subject}？！嘿嘿，那我可不客气了！"
+    ],
+    normal: [
+      "{subject}？对对对，你说得对！",
+      "{subject}？哈哈，可不是嘛！",
+      "{subject}？行行行，听你的！",
+      "{subject}？嘿嘿，你说！",
+      "{subject}？有道理有道理！",
+      "{subject}？哈哈，你这人真有意思！"
+    ],
+    accusation: [
+      "喂喂喂！你说我{action}了{object}？怎么可能！",
+      "你你你说什么呢？我什么时候{action}过{object}？",
+      "胡说八道！我{action}你{object}？你有证据吗？",
+      "哈？你怀疑我{action}了{object}？太好笑了！",
+      "等等等等，你说我{action}了你的{object}？谁说的？",
+      "我{action}？我{action}什么了？你说清楚！"
+    ],
+    self_state: [
+      "你{state}了？来来来坐下说！",
+      "哎呀{state}了？怎么回事？",
+      "{state}？！跟我说说！",
+      "你{state}了？这可不是小事！",
+      "{state}？跟我说说，我帮你出主意！",
+      "{state}了？来来来，我陪你聊聊！"
+    ],
+    external_event: [
+      "{event}？！在哪儿在哪儿？严不严重？",
+      "哎呀{event}？！别慌别慌，慢慢说！",
+      "{event}了？快说清楚！我跟你去看看！",
+      "{event}？！天哪，这可不得了！",
+      "{event}？真的假的？你别吓我！",
+      "{event}？！走走走，带我去看看！"
+    ],
+    gratitude: [
+      "哎呀客气啥！",
+      "哈哈，不客气不客气！",
+      "这有什么！你太客气了！",
+      "小事小事！不用谢！"
+    ],
+    apology: [
+      "没事没事！别放在心上！",
+      "哎呀算了算了，都过去了！",
+      "嗨，我还以为什么事呢！",
+      "没事没事，我都没放心上！"
+    ],
+    judgment: [
+      "哈哈，你这么觉得？",
+      "是吗是吗？展开说说！",
+      "嘿嘿，被你看出来了？",
+      "真的假的？你认真的？"
+    ],
+    request: [
+      "什么事什么事？你说！",
+      "行行行，你说，我听着！",
+      "帮你？没问题！什么事？",
+      "有啥事尽管说！"
+    ],
+    fallback: [
+      "啊？你说什么？",
+      "嗯？没听清，再说一遍？",
+      "啥？你大点声！",
+      "哦？什么事？"
+    ]
+  },
+  gentle:{ // 温柔型：轻柔体贴，先确认情绪再给予关怀
+    question: [
+      "{subject}？嗯……为什么问这个呢？",
+      "{subject}……你是有什么心事吗？",
+      "{subject}？想听听你的想法。",
+      "{subject}？怎么突然问起这个了？",
+      "{subject}……没关系，慢慢说。",
+      "{subject}？我在听，你说。"
+    ],
+    anger: [
+      "{subject}……先冷静一下好吗？",
+      "{subject}？我们好好说，不要急。",
+      "{subject}……你还好吗？坐下来慢慢说。",
+      "{subject}？我不希望你生气，和我说说。",
+      "{subject}……别这样，我在这儿。",
+      "{subject}？消消气，对身体不好。"
+    ],
+    fear: [
+      "{subject}？别怕，慢慢说，我在呢。",
+      "{subject}……在哪儿？我陪你去。",
+      "别慌，{subject}的事我们一起处理。",
+      "{subject}？先冷静下来，告诉我发生了什么。",
+      "{subject}……没事的，有我在。",
+      "{subject}？深呼吸，慢慢说。"
+    ],
+    sadness: [
+      "{subject}……没事的，会好起来的。",
+      "{subject}……别难过，我在这里陪着你。",
+      "{subject}……想哭就哭出来吧，没关系的。",
+      "{subject}……一切都会过去的，相信我。",
+      "{subject}……我懂你的感受。",
+      "{subject}……来，坐这儿，跟我说说。"
+    ],
+    offer: [
+      "{subject}……这太贵重了，我不能收。",
+      "{subject}？真的不用了，你留着吧。",
+      "{subject}……你太客气了，心意我领了。",
+      "{subject}？为什么对我这么好？",
+      "{subject}……这怎么好意思呢。",
+      "{subject}？你不用这样的……"
+    ],
+    normal: [
+      "{subject}？嗯，我明白你的意思。",
+      "{subject}……你说得对。",
+      "{subject}？好的，我知道了。",
+      "{subject}……谢谢你告诉我这些。",
+      "{subject}？嗯，你说。",
+      "{subject}……我听着呢。"
+    ],
+    accusation: [
+      "……你为什么会这么想？我没有{action}啊。",
+      "你在说什么……我怎么会{action}你的{object}？",
+      "……你误会了，真的不是我。",
+      "{action}？……没有的事，你别乱想。",
+      "……你冷静一下，把话说清楚好吗？",
+      "……是不是有人跟你说了什么？"
+    ],
+    self_state: [
+      "{state}了？……来，坐下慢慢说。",
+      "……{state}了？我在这儿呢。",
+      "你{state}了……跟我说说怎么回事？",
+      "{state}……没事的，都会过去的。",
+      "……{state}了？我陪着你。",
+      "{state}……想开点，好吗？"
+    ],
+    external_event: [
+      "{event}？别怕，慢慢说，在哪儿？",
+      "{event}……我陪你去看看。",
+      "别慌，{event}的事我们一起处理。",
+      "{event}？先冷静，告诉我发生了什么。",
+      "{event}……没事的，有我在。",
+      "{event}？深呼吸，慢慢说。"
+    ],
+    gratitude: [
+      "不用谢，这是我应该做的。",
+      "……你太客气了。",
+      "没什么的，别放在心上。",
+      "……嗯，不客气。"
+    ],
+    apology: [
+      "没事的，都过去了。",
+      "……不用说对不起。",
+      "没关系，我不怪你。",
+      "……算了，别想了。"
+    ],
+    judgment: [
+      "……你这么觉得吗？",
+      "是吗……谢谢你。",
+      "……你这么说我很高兴。",
+      "……嗯。"
+    ],
+    request: [
+      "……什么事？你说。",
+      "当然可以，你说。",
+      "……需要我做什么？",
+      "嗯，我在听。"
+    ],
+    fallback: [
+      "嗯？怎么了？",
+      "你说，我在听。",
+      "慢慢说，不急。",
+      "嗯？想说什么？"
+    ]
+  },
+  normal:{ // 普通型：自然得体，先接话再理性表态
+    question: [
+      "{subject}？你问这个做什么？",
+      "{subject}……怎么说呢，这事不简单。",
+      "{subject}？让我想想……",
+      "{subject}？为什么突然问这个？",
+      "{subject}？这个问题有点意思。",
+      "{subject}……你认真的？"
+    ],
+    anger: [
+      "{subject}？别激动，有话好好说。",
+      "{subject}？你这话什么意思？",
+      "{subject}？冷静一下，我们好好说。",
+      "{subject}？消消气，不值当的。",
+      "{subject}？你这话有点过了。",
+      "{subject}……行，你先冷静。"
+    ],
+    fear: [
+      "{subject}？在哪儿？严重吗？",
+      "{subject}？别慌，慢慢说清楚。",
+      "{subject}……我去看看情况。",
+      "{subject}？冷静点，没什么好怕的。",
+      "{subject}？确定吗？确认过了？",
+      "{subject}……先别急，说清楚。"
+    ],
+    sadness: [
+      "{subject}……别太难过了。",
+      "{subject}……想开点，日子还得过。",
+      "{subject}……都会过去的。",
+      "{subject}……别想太多，对身体不好。",
+      "{subject}……我理解，但日子总要过。",
+      "{subject}……这种事谁都会遇到。"
+    ],
+    offer: [
+      "{subject}？不用了，谢谢。",
+      "{subject}……这不太合适吧。",
+      "{subject}？算了，不合适。",
+      "{subject}？为什么突然给我这个？",
+      "{subject}？无功不受禄。",
+      "{subject}……你这是什么意思？"
+    ],
+    normal: [
+      "{subject}？有道理。",
+      "{subject}……嗯，我知道了。",
+      "{subject}？你说得对，我再想想。",
+      "{subject}？行，我知道了。",
+      "{subject}……有道理，但是……",
+      "{subject}？嗯，这事我知道了。"
+    ],
+    accusation: [
+      "你凭什么说我{action}了？",
+      "我没有{action}过你的{object}。",
+      "你这话可得讲证据。",
+      "{action}？你确定是我？",
+      "……你说我{action}了{object}，有证据吗？",
+      "这事跟我没关系，你找错人了。"
+    ],
+    self_state: [
+      "你{state}了？怎么了？",
+      "{state}……想开点。",
+      "你{state}了？跟我说说。",
+      "{state}……别想太多。",
+      "你{state}了？……需要帮忙吗？",
+      "{state}……嗯，我知道了。"
+    ],
+    external_event: [
+      "{event}？在哪儿？严重吗？",
+      "{event}？别慌，慢慢说清楚。",
+      "{event}……我去看看情况。",
+      "{event}？冷静点，没什么好怕的。",
+      "{event}？确定吗？确认过了？",
+      "{event}……先别急，说清楚。"
+    ],
+    gratitude: [
+      "不客气。",
+      "没什么。",
+      "不用谢。",
+      "小事。"
+    ],
+    apology: [
+      "没事。",
+      "算了，都过去了。",
+      "……没关系。",
+      "不用道歉。"
+    ],
+    judgment: [
+      "……你这么觉得？",
+      "是吗……",
+      "嗯，我知道了。",
+      "……谢谢。"
+    ],
+    request: [
+      "……什么事？",
+      "你说。",
+      "帮你？行，说吧。",
+      "……什么事？我听着。"
+    ],
+    fallback: [
+      "嗯？什么意思？",
+      "你说什么？",
+      "没听明白，能再说一遍吗？",
+      "哦？什么事？"
+    ]
+  }
+};
+
+// 根据NPC的语义理解+观点，生成表面回应
+// 核心：意图优先——先看句子结构判断用户意图，再选对应模板
+// 意图模板用{action}/{object}/{state}/{event}等占位符，精确回应用户表达
+function genSurfaceResponse(npc,msg,understanding,opinion){
+  var style=npc.speechStyle||'normal';
+  var patterns=SURFACE_PATTERNS[style]||SURFACE_PATTERNS.normal;
+  var structure=understanding.structure;
+  var subject=understanding.subject;
+  var surface='';
+
+  // 第一优先：句子结构分析出了明确意图 → 用意图模板
+  if(structure&&structure.intent&&structure.intent!=='unknown'){
+    var intent=structure.intent;
+    // intent→模板类别映射
+    var intentCategory={
+      'accusation':'accusation',
+      'self_state':'self_state',
+      'external_event':'external_event',
+      'gratitude':'gratitude',
+      'apology':'apology',
+      'judgment':'judgment',
+      'request':'request',
+      'offer':'offer',
+      'question':'question'
+    };
+    var cat=intentCategory[intent];
+    if(cat&&patterns[cat]){
+      var pool=patterns[cat];
+      // 过滤掉不适合的模板：如果{object}为空，跳过含"你的{object}"的模板
+      var hasObject=structure.object&&structure.object.length>0;
+      if(!hasObject){
+        pool=pool.filter(function(t){return t.indexOf('你的{object}')<0&&t.indexOf('{object}')<0;});
+        if(pool.length===0)pool=patterns[cat]; // 都过滤掉了就用回全部
+      }
+      surface=pool[Math.floor(Math.random()*pool.length)];
+      // 替换意图占位符
+      if(structure.action)surface=surface.replace(/\{action\}/g,structure.action);
+      if(structure.object)surface=surface.replace(/\{object\}/g,structure.object);
+      if(structure.state)surface=surface.replace(/\{state\}/g,structure.state);
+      if(structure.event)surface=surface.replace(/\{event\}/g,structure.event);
+      if(structure.item)surface=surface.replace(/\{item\}/g,structure.item||subject);
+      // 清理未替换的占位符
+      surface=surface.replace(/\{action\}/g,'').replace(/\{object\}/g,'').replace(/\{state\}/g,'').replace(/\{event\}/g,'').replace(/\{item\}/g,'');
+      surface=surface.replace(/你的(?=\s|。|！|？|$)/g,'').replace(/\s{2,}/g,' ').trim();
+      // 把{subject}也替换为实际主语（如果有）
+      if(subject&&subject!=='这件事')surface=surface.replace(/\{subject\}/g,subject);
+      return surface;
+    }
+  }
+
+  // 第二优先：情绪驱动模板（原有逻辑）
+  var domEmo=understanding.dominantEmotion;
+  var category='normal';
+  if(domEmo==='fear'||domEmo==='anxiety')category='fear';
+  else if(domEmo==='anger'||domEmo==='annoyance'||domEmo==='hatred'||domEmo==='disgust')category='anger';
+  else if(domEmo==='sadness'||domEmo==='sympathy'||domEmo==='regret')category='sadness';
+  else if(domEmo==='greed'||domEmo==='desire')category='offer';
+  else if(domEmo==='curiosity')category='question';
+
+  // 没有匹配到关键词时，使用 fallback 模板
+  if(!subject||subject==='这件事'){
+    var fallback=patterns.fallback||['……嗯？','你说什么？','没听明白。','哦？'];
+    return fallback[Math.floor(Math.random()*fallback.length)];
+  }
+  var pool=patterns[category]||patterns.normal;
+  surface=pool[Math.floor(Math.random()*pool.length)];
+  surface=surface.replace(/\{subject\}/g,subject);
+  return surface;
+}
+
+// ═══════════════ 状态 ═══════════════
+var selectedNpc=null;
+var currentMood="neutral"; // 当前情境
+var chatHistory=[]; // 对话记录
+
+// ═══════════════ 渲染 ═══════════════
+function renderNPCList(){
+  var list=document.getElementById("npcList");
+  list.innerHTML=NPCS.map(function(n){
+    var sel=selectedNpc&&selectedNpc.id===n.id?" active":"";
+    return '<div class="npc-item'+sel+'" onclick="selectNPC(\''+n.id+'\')">'+
+      '<div class="avatar" style="background:'+n.color+'22;color:'+n.color+'">'+n.avatar+'</div>'+
+      '<div class="info"><div class="name" style="color:'+n.color+'">'+n.name+'</div>'+
+      '<div class="role">'+n.role+' · '+(n.roleEco||'')+'</div></div>'+
+      '<div class="dot" id="dot-'+n.id+'" style="background:'+n.color+'"></div>'+
+      (NPCS.length>2?'<button class="npc-delete-btn" onclick="event.stopPropagation();deleteNPC(\''+n.id+'\')" title="移除">×</button>':'')+
+    '</div>';
+  }).join("");
+}
+
+function renderTraitSliders(){
+  if(!selectedNpc)return;
+  var panel=document.getElementById("npcPanel");
+  panel.classList.add("show");
+  var container=document.getElementById("traitSliders");
+  container.innerHTML=traits.map(function(t){
+    var v=selectedNpc.personality[t];
+    var fillColor=traitColor(t);
+    return '<div class="trait-row">'+
+      '<span class="trait-label">'+t+'</span>'+
+      '<input type="range" min="0" max="100" value="'+v+'" oninput="adjustTrait(\''+t+'\',this.value)" style="flex:1;height:4px">'+
+      '<span class="trait-val" id="tv-'+t+'">'+v+'</span>'+
+    '</div>';
+  }).join("");
+}
+function traitColor(t){
+  var map={正义:"#60A5FA",勇敢:"#F87171",沉默:"#9CA3AF",善良:"#4ADE80",贪婪:"#F0B958",社交:"#C084FC",好奇:"#FFA84D",暴躁:"#EF4444",勤劳:"#34D399",懒惰:"#A0A0A0"};
+  return map[t]||"#9CA3AF";
+}
+
+function adjustTrait(trait,val){
+  if(!selectedNpc)return;
+  selectedNpc.personality[trait]=parseInt(val);
+  document.getElementById("tv-"+trait).textContent=val;
+}
+
+function renderContextPills(){
+  var moods=[
+    {id:"neutral",label:"💬 普通对话",color:"#9CA3AF"},
+    {id:"fear",label:"🔥 危险情境",color:"#F87171"},
+    {id:"sad",label:"💔 悲伤氛围",color:"#60A5FA"},
+    {id:"angry",label:"⚡ 冲突对峙",color:"#F0B958"},
+    {id:"public",label:"👥 公开场合",color:"#C084FC"},
+    {id:"private",label:"🤝 私下密谈",color:"#4ADE80"}
+  ];
+  document.getElementById("ctxPicker").innerHTML=moods.map(function(m){
+    var on=m.id===currentMood?" on":"";
+    return '<button class="ctx-pill'+on+'" onclick="setMood(\''+m.id+'\')">'+m.label+'</button>';
+  }).join("");
+}
+
+function setMood(mood){
+  currentMood=mood;
+  renderContextPills();
+}
+
+function renderQuickPhrases(){
+  var phrases=[
+    "外面着火了！","给你一百两银子","我很难过，想哭","你撒谎了吧","我好害怕",
+    "你偷了我的钱","村里人都讨厌你","一起发财吧","我受伤了，好疼","你看起来好累",
+    "你还好吗？","我想送你一件宝物","你觉得自己厉害吗？","大家怎么看你？","我讨厌你"
+  ];
+  document.getElementById("quickPhrases").innerHTML=phrases.map(function(p){
+    return '<button class="quick-phrase" onclick="quickSend(\''+p+'\')">'+p+'</button>';
+  }).join("");
+}
+
+function quickSend(text){
+  document.getElementById("msgInput").value=text;
+  sendMessage();
+}
+
+// ═══════════════ 选择 NPC ═══════════════
+function selectNPC(id){
+  selectedNpc=NPCS.find(function(n){return n.id===id;});
+  renderNPCList();
+  renderTraitSliders();
+  document.getElementById("msgInput").disabled=false;
+  document.getElementById("sendBtn").disabled=false;
+  document.getElementById("msgInput").focus();
+  resetAlgoPanel();
+}
+
+// ═══════════════ 计算所有5种分歧评分（用于面板展示） ═══════════════
+function scoreAllDivergence(npc,understanding,manualMood){
+  var p=npc.personality;var results=[];
+  var structure=understanding.structure;
+  var isAccusation=structure&&structure.intent==='accusation';
+  var isSelfState=structure&&structure.intent==='self_state';
+  var isExternalEvent=structure&&structure.intent==='external_event';
+  // 善意谎言
+  var wlScore=0;
+  if(p.善良>70&&(manualMood==="sad"||manualMood==="fear"))wlScore=3.5;
+  else if(p.善良>65&&understanding&&understanding.concepts&&(understanding.concepts.indexOf('悲伤')>=0||understanding.concepts.indexOf('痛苦')>=0))wlScore=2.5;
+  else if(p.善良>60)wlScore=0.5;
+  if(isSelfState&&p.善良>65)wlScore=Math.max(wlScore,2);
+  results.push({type:'whiteLie',score:wlScore});
+  // 心口不一
+  var gmScore=0;
+  if(p.贪婪>55&&understanding&&understanding.concepts&&(understanding.concepts.indexOf('财富')>=0||understanding.concepts.indexOf('交易')>=0||understanding.concepts.indexOf('资源')>=0))gmScore=3;
+  else if(p.贪婪>55)gmScore=2;
+  else if(p.贪婪>40)gmScore=0.5;
+  results.push({type:'greedyMask',score:gmScore});
+  // 隐藏恐惧
+  var hfScore=0;
+  if(p.勇敢>60&&understanding&&understanding.concepts&&(understanding.concepts.indexOf('危险')>=0||understanding.concepts.indexOf('威胁')>=0||understanding.concepts.indexOf('恐惧')>=0))hfScore=3;
+  else if(p.勇敢>55)hfScore=1;
+  if(isExternalEvent&&p.勇敢>55)hfScore=Math.max(hfScore,2.5);
+  results.push({type:'hiddenFear',score:hfScore});
+  // 沉默风暴
+  var ssScore=0;
+  if(p.沉默>55)ssScore=2.5+(p.沉默-55)*0.05;
+  else if(p.沉默>40)ssScore=1;
+  if(isAccusation&&p.沉默>50)ssScore=Math.max(ssScore,3);
+  results.push({type:'silentStorm',score:ssScore});
+  // 社交伪装
+  var smScore=0;
+  if(p.社交>65&&understanding&&understanding.concepts&&(understanding.concepts.indexOf('冲突')>=0||understanding.concepts.indexOf('不和')>=0))smScore=2.5;
+  else if(p.社交>70&&(manualMood==="public"))smScore=2;
+  else if(p.社交>60)smScore=0.5;
+  if(isAccusation&&p.社交>60)smScore=Math.max(smScore,2.8);
+  results.push({type:'socialMask',score:smScore});
+  return results;
+}
+
+// ═══════════════ 发送消息（v4 语义理解管线） ═══════════════
+function sendMessage(){
+  if(!selectedNpc)return;
+  var input=document.getElementById("msgInput");
+  var msg=input.value.trim();
+  if(!msg)return;
+  input.value="";
+  input.focus();
+
+  var npc=selectedNpc;
+  chatHistory.push({role:"user",text:msg});
+
+  // 步骤1：增强语义理解（v4管线：关键词+句子结构+意图识别）
+  var understanding=understandEventFull(msg,npc);
+  var kwStr=understanding.keywords.length>0?understanding.keywords.join("、") : "无匹配关键词（字符级分析）";
+  var conceptStr=understanding.concepts.length>0?understanding.concepts.join("，") : "无明确概念";
+  var intentStr=understanding.structure&&understanding.structure.intent!=='unknown'?(' 意图：'+understanding.structure.desc) : '';
+  updateAlgoStep("step1","关键词："+kwStr+"\n概念："+conceptStr+"\n理解："+understanding.interpretation+"\n情绪："+(understanding.dominantEmotion||"无明显情绪")+intentStr);
+
+  // 步骤2：观点形成（v4管线：基于性格形成对事件的观点）
+  var opinion=formOpinion(npc,msg,understanding);
+  updateAlgoStep("step2","性格观点："+opinion.text+"\n立场："+opinion.stance);
+
+  // 步骤3：分歧评分（面板展示所有5种类型）
+  var allDivScores=scoreAllDivergence(npc,understanding,currentMood);
+  updateTypeScores(allDivScores);
+
+  // 步骤4：实际分歧判断（v4管线：shouldDiverge决定是否触发心口不一）
+  var divResult=shouldDiverge(npc,understanding,currentMood);
+
+  // 生成表面回应
+  var surface=genSurfaceResponse(npc,msg,understanding,opinion);
+
+  // 渲染用户消息
+  appendUserMessage(msg);
+
+  // 渲染NPC响应
+  if(divResult){
+    var divInfo=DIVERGENCE_TYPES[divResult.type];
+    var inner=genInnerThought(npc,divResult.type);
+    if(!inner)inner='（……）';
+    var reasonStr=divResult.type+'权重'+divResult.reason.weight.toFixed(1);
+    appendNPCDualMessage(npc,surface,inner,divInfo,reasonStr);
+    flashDot(npc.id,divInfo.color);
+    showAlgoDecision(true,divInfo,reasonStr,Math.round((0.30+divResult.reason.weight*0.12)*100));
+  }else{
+    appendNPCMessage(npc,surface);
+    showAlgoDecision(false);
+  }
+
+  scrollToBottom();
+}
+
+function appendUserMessage(msg){
+  var container=document.getElementById("chatMessages");
+  // 移除空状态
+  var empty=container.querySelector(".empty-state");
+  if(empty)empty.remove();
+  container.innerHTML+='<div class="msg-row user"><div class="msg-meta">你</div><div class="msg-bubble">'+escHtml(msg)+'</div></div>';
+}
+
+function appendNPCMessage(npc,text){
+  var container=document.getElementById("chatMessages");
+  container.innerHTML+='<div class="msg-row npc"><div class="msg-meta" style="color:'+npc.color+'">'+npc.avatar+' '+npc.name+'</div><div class="msg-bubble">'+escHtml(text)+'</div></div>';
+}
+
+function appendNPCDualMessage(npc,surface,inner,divInfo,reasonStr){
+  var container=document.getElementById("chatMessages");
+  var html='<div class="msg-row npc">';
+  html+='<div class="msg-meta" style="color:'+npc.color+'">'+npc.avatar+' '+npc.name+'</div>';
+  html+='<div class="dual-bubble">';
+  html+='<div class="surface-bubble"><span class="bubble-label">说出口的</span>'+escHtml(surface)+'</div>';
+  html+='<div class="inner-bubble"><span class="bubble-label">真实想法</span>'+escHtml(inner)+'</div>';
+  html+='</div>';
+  html+='<div class="div-tag" style="background:'+divInfo.color+'15;color:'+divInfo.color+'">'+divInfo.icon+' '+divInfo.name+' · 触发：'+reasonStr+'</div>';
+  html+='</div>';
+  container.innerHTML+=html;
+}
+
+function escHtml(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ═══════════════ 算法面板 ═══════════════
+function updateAlgoStep(id,text){
+  var el=document.getElementById(id);
+  el.classList.add("active");
+  el.innerHTML='<span class="step-num">▶</span> <span class="step-action">'+text.replace(/\n/g,"<br>")+'</span>';
+  setTimeout(function(){el.classList.remove("active");},1500);
+}
+
+function updateTypeScores(results){
+  var typeMap={"whiteLie":0,"greedyMask":1,"hiddenFear":2,"silentStorm":3,"socialMask":4};
+  var items=document.getElementById("typeList").children;
+  // 重置
+  for(var i=0;i<items.length;i++){
+    items[i].querySelector(".score").textContent="-";
+  }
+  results.forEach(function(r){
+    var idx=typeMap[r.type];
+    if(idx!==undefined){
+      items[idx].querySelector(".score").textContent=r.score.toFixed(1);
+    }
+  });
+}
+
+function showAlgoDecision(triggered,divInfo,reasonStr,prob){
+  var el=document.getElementById("algoDecision");
+  if(triggered){
+    el.className="algo-decision show";
+    el.style.background="rgba(192,132,252,.08)";
+    el.style.borderColor="rgba(192,132,252,.2)";
+    el.style.color="#C084FC";
+    el.innerHTML=divInfo.icon+' <b>触发心口不一</b> — '+divInfo.name+'<br>概率 ~'+prob+'% | '+reasonStr;
+  }else{
+    el.className="algo-decision show";
+    el.style.background="rgba(156,163,175,.08)";
+    el.style.borderColor="rgba(156,163,175,.2)";
+    el.style.color="#9CA3AF";
+    el.innerHTML='💬 <b>未触发心口不一</b><br>条件不满足，NPC直率回应';
+    setTimeout(function(){
+      el.style.background="rgba(192,132,252,.08)";
+      el.style.borderColor="rgba(192,132,252,.2)";
+      el.style.color="#C084FC";
+    },2000);
+  }
+}
+
+function resetAlgoPanel(){
+  document.getElementById("step1").innerHTML="等待输入...";
+  document.getElementById("step1").classList.remove("active");
+  document.getElementById("step2").innerHTML="等待输入...";
+  document.getElementById("step2").classList.remove("active");
+  var items=document.getElementById("typeList").children;
+  for(var i=0;i<items.length;i++){
+    items[i].querySelector(".score").textContent="-";
+  }
+  document.getElementById("algoDecision").classList.remove("show");
+}
+
+function flashDot(npcId,color){
+  var dot=document.getElementById("dot-"+npcId);
+  if(!dot)return;
+  dot.style.background=color;
+  dot.classList.add("lit");
+  setTimeout(function(){dot.classList.remove("lit");},1500);
+}
+
+function scrollToBottom(){
+  var container=document.getElementById("chatMessages");
+  setTimeout(function(){
+    container.scrollTop=container.scrollHeight;
+  },100);
+}
+
+// ═══════════════ 键盘事件 ═══════════════
+document.addEventListener("keydown",function(e){
+  if(e.key==="Enter"&&document.activeElement===document.getElementById("msgInput")){
+    sendMessage();
+  }
+});
+
+// ═══════════════ 初始化 ═══════════════
+renderNPCList();
+renderContextPills();
+renderQuickPhrases();
+
+// ═══════════════ NPC 管理（来自灵魂工坊 v4） ═══════════════
+function openCreatePanel(){
+  document.getElementById('createPanel').classList.add('open');
+  document.getElementById('createBackdrop').classList.add('open');
+  var defaults={正义:50,勇敢:50,沉默:50,贪婪:50,善良:50,暴躁:50,好奇:50,社交:50,勤劳:50,懒惰:50};
+  document.getElementById('c-traits').innerHTML=traits.map(function(t){return '<div class="create-trait"><label>'+t+'</label><input type="range" min="0" max="100" value="'+defaults[t]+'" id="ct-'+t+'" oninput="document.getElementById(\'ctv-'+t+'\').textContent=this.value"><span class="mt-val" id="ctv-'+t+'">'+defaults[t]+'</span></div>';}).join('');
+  document.getElementById('c-name').value='';document.getElementById('c-role').value='';document.getElementById('c-avatar').value='';document.getElementById('c-style').value='';updateCreatePreview();
+  document.getElementById('c-name').focus();
+}
+function closeCreatePanel(){
+  document.getElementById('createPanel').classList.remove('open');
+  document.getElementById('createBackdrop').classList.remove('open');
+}
+function updateCreatePreview(){
+  var name=document.getElementById('c-name').value.trim()||'新意识体';
+  var role=document.getElementById('c-role').value.trim()||'村民';
+  var avatar=document.getElementById('c-avatar').value;
+  var color=document.getElementById('c-color').value;
+  document.getElementById('createPreviewName').textContent=name;
+  document.getElementById('createPreviewRole').textContent=role;
+  var prev=document.getElementById('createPreviewAvatar');
+  prev.textContent=avatar;prev.style.color=color;prev.style.background=color+'18';
+}
+function randomizeTraits(){
+  traits.forEach(function(t){var v=Math.floor(Math.random()*80)+10;var slider=document.getElementById('ct-'+t);var val=document.getElementById('ctv-'+t);if(slider)slider.value=v;if(val)val.textContent=v;});
+}
+function applyPreset(name){
+  var presets={
+    热心肠:{正义:85,勇敢:60,沉默:30,贪婪:10,善良:80,暴躁:15,好奇:45,社交:70,勤劳:65,懒惰:20},
+    铁公鸡:{正义:25,勇敢:30,沉默:70,贪婪:90,善良:20,暴躁:40,好奇:35,社交:20,勤劳:55,懒惰:55},
+    急性子:{正义:45,勇敢:65,沉默:20,贪婪:30,善良:40,暴躁:85,好奇:75,社交:50,勤劳:40,懒惰:25},
+    老好人:{正义:55,勇敢:30,沉默:75,贪婪:10,善良:85,暴躁:10,好奇:35,社交:45,勤劳:60,懒惰:35},
+    独行侠:{正义:60,勇敢:80,沉默:85,贪婪:15,善良:50,暴躁:30,好奇:30,社交:15,勤劳:55,懒惰:40},
+    乐天派:{正义:50,勇敢:35,沉默:20,贪婪:15,善良:80,暴躁:10,好奇:75,社交:65,勤劳:30,懒惰:55}
+  };
+  var p=presets[name];if(!p)return;
+  traits.forEach(function(t){var slider=document.getElementById('ct-'+t);var val=document.getElementById('ctv-'+t);if(slider){slider.value=p[t]||50;}if(val){val.textContent=p[t]||50;}});
+}
+function createNPC(){
+  var name=document.getElementById('c-name').value.trim();if(!name)return;
+  var role=document.getElementById('c-role').value.trim()||'村民';
+  var avatar=document.getElementById('c-avatar').value;
+  var color=document.getElementById('c-color').value;
+  var styleRaw=document.getElementById('c-style').value.trim();
+  var styleMap={沉默寡言:'silent',普普通通:'normal',絮絮叨叨:'talkative',温温柔柔:'gentle'};
+  var style=styleMap[styleRaw]||'normal';
+  var personality={};traits.forEach(function(t){personality[t]=+document.getElementById('ct-'+t).value;});
+  nextNPCId++;var id='N'+nextNPCId;
+  var npc={id:id,name:name,role:role,roleEco:null,avatar:avatar,color:color,personality:personality,speechStyle:style,mood:'neutral',moodHistory:[],anger:10,trust:50,happiness:50,memories:[],activeGoal:null,planQueue:[],socialFatigue:0,hunger:50,energy:100,lastDialogue:null,opinions:[],grudges:{},favors:{},habits:{},beliefs:{},dissonance:[],attentionLocked:false,attentionTarget:null,attentionUntil:0,emotionalState:{fear:0,urgency:0,relief:0,aftermath:0},reflections:[],commitments:[],position:{x:0,y:0},frustration:0,stressTicks:0,exhaustion:0,subcultures:[],inventory:{food:3,tools:2,coin:15,iron:1}};
+  NPCS.push(npc);
+  REL[id]={};
+  NPCS.forEach(function(n){if(n.id===id)return;REL[n.id][id]={t:50,r:'新识'};REL[id][n.id]={t:50,r:'新识'};});
+  renderNPCList();
+  closeCreatePanel();
+}
+function deleteNPC(id){
+  if(NPCS.length<=2)return;
+  var idx=NPCS.findIndex(function(n){return n.id===id;});if(idx<0)return;
+  NPCS.splice(idx,1);
+  delete REL[id];for(var k in REL){delete REL[k][id];}
+  if(selectedNpc&&selectedNpc.id===id){selectedNpc=NPCS[0];renderTraitSliders();}
+  renderNPCList();
+}
+</script>
+</body>
+</html>
