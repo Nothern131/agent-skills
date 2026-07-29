@@ -2,7 +2,7 @@
 
 A collection of Agent Skills for AI coding assistants that support the [Agent Skills specification](https://agentskills.io/specification).
 
-> **v4.5** — 15 rule framework, 7 skills, 29 auto-trigger rules, Autonomous Loop, 7-step YAGNI ladder, Meta-skill for self-creating skills.
+> **v5** — 15-rule framework, 7 skills, 29 auto-trigger rules, Autonomous Loop, 7-step YAGNI ladder, Meta-skill. **Mandatory enforcement** — rules apply to all tasks, no exceptions. 56% shorter than v4.5 (214 vs 484 lines).
 
 ## Skills
 
