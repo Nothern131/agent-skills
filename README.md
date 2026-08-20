@@ -2,7 +2,7 @@
 
 A collection of Agent Skills for AI coding assistants that support the [Agent Skills specification](https://agentskills.io/specification).
 
-> **v5** — 15-rule framework, 7 skills, 29 auto-trigger rules, Autonomous Loop, 7-step YAGNI ladder, Meta-skill. **Mandatory enforcement** — rules apply to all tasks, no exceptions. 56% shorter than v4.5 (214 vs 484 lines).
+> **v5** — 15-rule framework, 8 skills, 30 auto-trigger rules, Autonomous Loop, 7-step YAGNI ladder, Meta-skill, Slice-check batching. **Mandatory enforcement** — rules apply to all tasks, no exceptions. 56% shorter than v4.5 (214 vs 484 lines).
 
 ## Skills
 
@@ -22,6 +22,7 @@ A collection of Agent Skills for AI coding assistants that support the [Agent Sk
 |-------|-------------|
 | [ponytail-ladder](./skills/ponytail-ladder/) | 7-step decision ladder that prevents over-engineering. **-54% code, -22% tokens, 100% security.** Based on [Ponytail](https://github.com/DietrichGebert/ponytail) (62K stars, MIT). 3 intensity levels (lite/full/ultra). |
 | [skill-creator](./skills/skill-creator/) | **Meta-skill**: teaches AI agents how to create new skills autonomously. Includes YAML format, 5-step creation flow, 10-item validation checklist, 7 anti-patterns, and auto-registration to trigger table. |
+| [slice-check](./skills/slice-check/) | **Slice-check batching**: splits large tasks into functional slices (≈ one day of a top engineer's work), enforcing a quality gate (run-verify → codeguard → adversarial review → delivery template) after each slice, with per-slice user confirmation. Prevents writing thousands of lines before reviewing. |
 
 ### AI Enhancement
 | Skill | Description |
@@ -46,8 +47,11 @@ A collection of Agent Skills for AI coding assistants that support the [Agent Sk
 - **Log-driven diagnosis**: read logs before fixing, never guess blind
 - **Intent re-alignment**: verify direction still matches user's core intent each loop
 
-### 29 Auto-Trigger Rules
-29 trigger conditions in the 2.11 table automatically load the right skill — no waiting for user to ask. Covers: codebase exploration, testing, code review, frontend design, game development, data analysis, web scraping, MCP building, and more.
+### 30 Auto-Trigger Rules
+30 trigger conditions in the 2.11 table automatically load the right skill — no waiting for user to ask. Covers: codebase exploration, testing, code review, frontend design, game development, data analysis, web scraping, MCP building, and more.
+
+### Slice-Check Batching (v5.1)
+Batches large tasks into functional slices (≈ one day of a top engineer's work) with a mandatory quality gate after each slice: run-verify → codeguard scan → adversarial review → delivery template. Per-slice user confirmation prevents finishing thousands of lines before review. Triggered for ≥3-file / multi-module / new-feature tasks.
 
 ## Installation
 

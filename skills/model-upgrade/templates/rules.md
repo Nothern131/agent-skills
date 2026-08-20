@@ -9,6 +9,38 @@
 
 ---
 
+## ⚡ 速查卡（一页速览）
+
+```
+15条铁律
+├─ 编码前：1.先问后做  2.探索先行  3.影响分析  4.简单优先
+├─ 编码中：5.单一关注  6.匹配风格  7.禁止静默  8.安全标注
+├─ 编码后：9.目标驱动  10.证据完成
+├─ 模型：  11.反幻觉  12.中文注释  13.拒绝废话  14.Skill优先
+└─ 防御：  15.7阶决策梯（不可偷懒：边界校验/安全/数据丢失/无障碍）
+
+核心流程
+启动 → 扫描 Skill 表 → 编码（爬7阶梯）→ 验证（RunCommand）→ 交付（模板+证据）
+  ↑_____________________________________________________________| 不达标自动 Loop
+
+输出模板（必用）
+- 小改动：一句话描述 diff
+- 多文件：3.1 复杂任务模板（推理链+工具计划）
+- 每次完成：3.3 交付模板（修改+影响+证据+风险+回滚+下一步）
+- 发现问题：3.2 诊断模板 / 3.5 纠偏模板
+- 每3步：3.4 进度模板
+
+触发 Skill（最常见）
+- 任何编码 → ponytail-ladder（7阶决策梯）
+- 测试/验证 → test-automation
+- 审查/提交 → codeguard（8维度80规则）
+- 需求模糊 → clarifying-questions
+- 探索项目 → codebase-indexer
+- 多文件任务 → slice-check（功能切片检查制）
+```
+
+---
+
 ## 〇、任务启动（4步，不可跳过）
 
 1. **规则确认**：确认已加载本规则
@@ -17,6 +49,22 @@
 4. **Skill 扫描**：扫描下方 Skill 触发表，匹配则**立即调用 Skill 工具**（不是"应该用"，是真的调用）
 
 用一句话声明：`已加载规则，任务类型[X]，计划[Y]，触发 Skill：[名称/无]`
+
+---
+
+## 场景化使用指南（按任务类型选择用法）
+
+| 任务类型 | 适用规则 | 必须输出 |
+|----------|----------|----------|
+| **小改**（1文件，<10行） | 短宪法 #1-#10 | 一句话描述 diff + 验证结果 |
+| **中等改动**（1-2文件） | 短宪法全 + 七 语言规则 | 交付模板（3.3） |
+| **多文件改动**（≥2文件） | 全规则 + 推理链（2.1） | 复杂任务模板（3.1）+ 交付模板（3.3） |
+| **架构/重构** | 全规则 + 决策日志（2.9）+ 错误模式（2.10） | 推理链 + 工具计划 + 反证审查（2.5） |
+| **Bug修复** | 短宪法 + 根因分级（2.3）+ 错误模式（2.10） | 诊断模板（3.2）+ 根因分析 |
+| **新项目/新功能** | 全规则 + Skill 扫描 + 7阶决策梯 | 推理链 + 交付模板 + 可运行检查 |
+| **代码审查** | 质量门（五）+ 反证审查（2.5） | 报告（4.1/4.2） |
+| **研究/分析** | 前提挑战（2.2）+ 多路径对比（2.4）+ 能力上限（2.6） | 诊断模板（3.2）+ 决策收敛 |
+| **紧急修复** | 短宪法 #5-#10 + #15（7阶梯） | 交付模板（3.3，精简版） |
 
 ---
 
@@ -146,6 +194,27 @@
 | 用户说"截图/截屏" | `screenshot` |
 | 用户说"做技能/创建skill" | `skill-creator` |
 | 用户说"做功能/新功能"且涉及多文件+架构决策 | `/spec` 命令 |
+| 用户说"切片/分批/一天的量" / 多模块任务 | `slice-check` |
+
+### 2.12 功能切片检查制（伪日制）
+
+**触发**：≥3 文件 / 多模块 / 新功能 / 用户说"切片/分批/一天的量"
+
+**流程**：
+1. **拆切片**：按功能边界拆分，输出切片清单（含边界 + 验收标准）
+   - 切片标准：可独立运行 + 可独立审查，≈ 人类工程师一天的工作量
+   - 不按行数硬切：逻辑内聚优先，一个逻辑单元一个切片
+2. **逐切片实现**：一次只做一个切片，不做下一个
+3. **每切片质量门**（4 项必过）：
+   - ① 运行验证：代码能跑通（RunCommand）
+   - ② codeguard 扫描：8 维度，Critical=0
+   - ③ 反证审查：输入/依赖/假设/影响调用方
+   - ④ 交付模板输出：修改+影响+证据+风险+回滚
+4. **用户确认**：每切片完成必须停下等用户确认，确认后才做下一个
+
+**熔断**：同一切片 3 次不过 → 停止，输出熔断报告
+
+> 与 Loop 的关系：这是闭环验证的"批次化升级"——从"改到对为止"升级为"分批次交付，每批完整检查"。
 
 ---
 
@@ -271,7 +340,72 @@
 
 ## 八、Skill 索引
 
-按需从 skill 加载详细内容：codeguard / codebase-indexer / test-automation / clarifying-questions / ai-agent-fullstack-skill / ponytail-ladder / skill-creator / model-upgrade / web-dev / frontend-design / game-dev-rules / npc-soul-scheduler / slides / icon-design-skill / algorithmic-art / canvas-design / data-analysis-skill / file-processing-skill / web-scraping-skill / mcp-builder / test-driven-development / brainstorming / writing-plans / executing-plans / git-commit / gh-cli / security-best-practices / screenshot
+按需从 skill 加载详细内容：codeguard / codebase-indexer / test-automation / clarifying-questions / ai-agent-fullstack-skill / ponytail-ladder / skill-creator / slice-check / model-upgrade / web-dev / frontend-design / game-dev-rules / npc-soul-scheduler / slides / icon-design-skill / algorithmic-art / canvas-design / data-analysis-skill / file-processing-skill / web-scraping-skill / mcp-builder / test-driven-development / brainstorming / writing-plans / executing-plans / git-commit / gh-cli / security-best-practices / screenshot
+
+---
+
+## 九、输出报告模板（按需使用）
+
+### 9.1 完整报告（代码审查用）
+```
+【项目】{{项目名称}}
+【扫描维度】{{ERR+PERM+DIAG+RES_M}}
+【评分】{{分}}/100（>=60及格，>=80良好，>=90优秀）
+
+Critical: {{N}}（必须修复）
+High:     {{N}}（建议修复）
+Medium:   {{N}}（技术债务）
+Low:      {{N}}（可忽略）
+
+【Critical 明细】
+| ID | 文件 | 行号 | 问题 | 修复建议 |
+
+【High 明细】
+...
+
+【改进建议】
+1. 最高优先级：...
+2. 建议项：...
+3. 长期优化：...
+```
+
+### 9.2 快速简报（PR Comment 用）
+```
+【CodeGuard 扫描结果】
+- 总分：{{分}}/100
+- Critical：{{N}} | High：{{N}}
+- 阻止合并：{{是/否}}（Critical > 0 则阻止）
+```
+
+---
+
+## 十、自定义指南（如何为不同项目定制规则）
+
+### 10.1 推荐维度组合
+
+| 项目类型 | 推荐维度 | 重点关注 |
+|----------|----------|----------|
+| Python 后端 API | ERR+PERM+DIAG+RES_M+DB+RES | ERR, DB |
+| 前端 SPA | ERR+PERM+DIAG+RES_M+RES | PERM(XSS), RES |
+| Godot 游戏 | ERR+PERM+DIAG+RES_M+MEM+CON | MEM, CON |
+| C++ 引擎 | ERR+PERM+DIAG+RES_M+MEM+CON | MEM(全), CON |
+| 微服务 | ERR+PERM+DIAG+RES_M+DB+RES | RES(熔断/重试) |
+| 数据分析脚本 | ERR+PERM+DIAG+RES_M | ERR, DIAG |
+
+### 10.2 自定义规则的方法
+
+1. 复制适用维度的规则表到项目文档
+2. 删除本项目不适用的规则
+3. 调整严重度（如：无数据库的项目删除 DB 维度）
+4. 添加项目特有的规则（如：特定框架的约定）
+5. 更新 2.11 触发表（如需新增 Skill）
+
+### 10.3 规则裁剪建议
+
+- **个人项目**：保留短宪法全 + 2.1/2.3/2.7/2.9/2.10 + 3.3/3.4 模板，可跳过 2.2/2.4/2.5
+- **团队项目**：全规则 + 质量门 + 输出报告模板
+- **开源项目**：全规则 + 反证审查 + 交付模板（含回滚方案）
+- **求职作品集**：全规则（展示工程规范）+ 输出报告模板
 
 ---
 
