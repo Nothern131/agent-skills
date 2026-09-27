@@ -76,12 +76,14 @@ score = 100 - (total_deduction / max_possible) × 100
 
 ## Issues (by severity)
 ### CRITICAL
-- **[RULE_ID]** file:line — description
+- **[CG-RULE_ID]** file:line — description
   Fix: concrete suggestion
 
 ## Top Priority Fixes
-1. [CRITICAL] RULE_ID — ...
+1. [CRITICAL] CG-RULE_ID — ...
 ```
+
+**错误码引用**：每条 issue 的 ID 格式为 `CG-<维度ID><序号>`（如 `CG-ERR010`、`CG-MEM002`），与 2.10 错误模式日志的 `[错误码]` 字段直接对应，可追溯。
 
 ## AI Security Blind Spots
 
