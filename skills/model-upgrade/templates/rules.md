@@ -32,13 +32,14 @@
 - 每3步：3.4 进度模板
 
 触发 Skill（最常见）
-- 任何编码 → ponytail-ladder（7阶决策梯）
-- 测试/验证 → test-automation
+- 任何编码 → engineering-mastery（7阶决策梯）
+- 测试/验证 → test-driven-development
 - 审查/提交 → codeguard（8维度80规则）
-- 需求模糊 → clarifying-questions
+- 需求模糊 → clarifying-questions-skill
 - 探索项目 → codebase-indexer
 - 多文件任务 → slice-check（功能切片检查制）
 - 察觉是大项目（多文件·长代码） → CODE_MAP 全局框架（主动搭建·先读后回写，见 2.17）
+- 操作浏览器 → browser_use 子代理 / browser_* 工具（唯一链路，禁 CDP/Playwright，见 2.18）
 ```
 
 ***
@@ -204,11 +205,11 @@
 | 触发条件                       | 调用 Skill                   |
 | -------------------------- | -------------------------- |
 | 首次进入项目 / 用户说"探索/了解/结构"     | `codebase-indexer`         |
-| 代码生成后 / 用户说"测试/验证"         | `test-automation`          |
+| 代码生成后 / 用户说"测试/验证"         | `test-driven-development`  |
 | 生成重要代码 / 审查 / 提交前 / Bug修复后 | `codeguard`                |
-| 用户需求模糊 / 多条路径可选            | `clarifying-questions`     |
-| **任何编码任务**                 | `ponytail-ladder`          |
-| 用户说"过度工程化/简化/最小实现/YAGNI"   | `ponytail-ladder`          |
+| 用户需求模糊 / 多条路径可选            | `clarifying-questions-skill` |
+| **任何编码任务**                 | `engineering-mastery`      |
+| 用户说"过度工程化/简化/最小实现/YAGNI"   | `engineering-mastery`      |
 | 用户说"构建/搭建Agent/聊天机器人"      | `ai-agent-fullstack-skill` |
 | 用户说"创建网页/网站/前端页面"          | `web-dev`                  |
 | 用户说"做UI/界面设计/仪表盘/美化"       | `frontend-design`          |
@@ -234,6 +235,7 @@
 | 用户说"做功能/新功能"且涉及多文件+架构决策    | `/spec` 命令                 |
 | 用户说"切片/分批/一天的量" / 多模块任务    | `slice-check`              |
 | 察觉是大项目（≥5源文件 / 跨文件改动 / 长代码） | CODE_MAP 全局框架（2.17，主动搭建·先读后回写） |
+| 需操作浏览器（导航/点击/填表/截图/读页面） | `browser_use` 子代理 / `browser_*` 工具（2.18，禁 CDP/Playwright） |
 
 ### 2.12 功能切片检查制（伪日制）
 
@@ -386,6 +388,21 @@
 **首次落地**：项目首次触发时，若 `CODE_MAP.md` 不存在，先生成首版（覆盖全部源文件条目 + 一段简报），再开始任务。
 **与 2.14 的关系**：2.14 讲"读什么"（调度），2.17 讲"结构认知从哪来"（持久地图）。地图本身遵循 2.14 地图原则——入口只做索引，细则在代码。
 
+### 2.18 浏览器控制协议（唯一正确链路，别再探索）
+
+**触发**：任何需要操作浏览器（导航/点击/填表/截图/读页面）的任务。
+**唯一正确方式**：直接用本插件的浏览器能力——`browser_use` 子代理（多步操作）或 `browser_*` 工具（navigate/click/type/screenshot/snapshot）。指令自动经 browser-bridge → Chrome 扩展 → `chrome.debugger` 操作**你的真实 Chrome（带登录态）**。**不要自己连端口、不要自己起浏览器进程。**
+**使用前提（3 个全满足）**：TRAE 桌面端运行 + Chrome 运行 + 扩展已连接（TRAE 设置 → 浏览器 → 外部浏览器）。
+**禁止**（都是踩过的坑）：
+- 禁止直连 CDP 端口（`localhost:9222`）——日常 Chrome **没开**远程调试端口，端口根本不存在
+- 禁止自启 Chrome/Edge 带调试端口——新实例无登录态，且与扩展实例冲突
+- 禁止 Playwright/Puppeteer 连接或启动浏览器——无登录态，重登录有风控风险
+- 禁止新建 `--user-data-dir` 干净环境——等于从零再来
+
+**判断原则**：需登录态（发帖/投递/查订单/读私信）→ **必须**走官方链路；公开页面抓取 → 任意方式（WebFetch/爬虫）。
+**故障速查**：状态"未连接"→ 重启 TRAE；工具超时 → `chrome://extensions` 重启扩展（Service Worker 休眠）；顶部出现"TRAE 已开始调试"提示条 → **正常，勿点取消**（点了断开）。
+**细节**（链路架构/文件地址/自检命令/完整故障表）→ 见 `E:\TRAE浏览器控制运行方式.md`
+
 ***
 
 ## 三、执行模板（按需使用，固定格式，不可自由发挥）
@@ -513,7 +530,7 @@
 
 ## 八、Skill 索引
 
-按需从 skill 加载详细内容：codeguard / codebase-indexer / test-automation / clarifying-questions / ai-agent-fullstack-skill / ponytail-ladder / skill-creator / slice-check / model-upgrade / web-dev / frontend-design / game-dev-rules / npc-soul-scheduler / slides / icon-design-skill / algorithmic-art / canvas-design / data-analysis-skill / file-processing-skill / web-scraping-skill / mcp-builder / test-driven-development / brainstorming / writing-plans / executing-plans / git-commit / gh-cli / security-best-practices / screenshot
+按需从 skill 加载详细内容：codeguard / codebase-indexer / test-driven-development / clarifying-questions-skill / ai-agent-fullstack-skill / engineering-mastery / harness-execution / skill-creator / slice-check / model-upgrade / web-dev / frontend-design / game-dev-rules / npc-soul-scheduler / slides / icon-design-skill / algorithmic-art / canvas-design / data-analysis-skill / file-processing-skill / web-scraping-skill / mcp-builder / brainstorming / writing-plans / executing-plans / git-commit / gh-cli / security-best-practices / screenshot
 
 ***
 
